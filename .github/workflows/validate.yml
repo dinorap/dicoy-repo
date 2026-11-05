@@ -1,0 +1,30 @@
+name: validate-repo
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cài dpkg
+        run: sudo apt-get update && sudo apt-get install -y dpkg-dev
+      - name: Kiểm tra Packages khớp debs/
+        run: |
+          set -e
+          dpkg-scanpackages debs /dev/null > /tmp/Packages.new 2>/dev/null
+          if ! diff -q <(grep -vE '^(Date|SHA256| )' Packages) \
+                       <(grep -vE '^(Date|SHA256| )' /tmp/Packages.new) >/dev/null; then
+            echo "::warning::Packages lệch với debs/. Chạy ./new-release.sh rồi commit lại."
+          fi
+      - name: Kiểm tra SHA256 trong Release
+        run: |
+          set -e
+          while read -r sha size name; do
+            [ -n "$name" ] || continue
+            actual=$(sha256sum "$name" | cut -d' ' -f1)
+            [ "$actual" = "$sha" ] || { echo "SHA lệch: $name"; exit 1; }
+          done < <(awk '/^SHA256:/{f=1;next} f&&NF==3{print}' Release)

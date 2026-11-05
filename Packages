@@ -1,0 +1,33 @@
+Package: com.dicoy.dicoy
+Version: 1.2.3+local24
+Architecture: iphoneos-arm64
+Maintainer: DiCoy Developer <dev@dicoy.local>
+Installed-Size: 360
+Depends: mobilesubstrate (>= 0.9.5000), preferenceloader, firmware (>= 15.0), com.opa334.libsandy
+Filename: debs/com.dicoy.dicoy_1.2.3+local24_iphoneos-arm64.deb
+Size: 46970
+MD5sum: f5cea07f49c3b633e3a80a0ebd06889f
+SHA1: eb3d6d6d53178b28ab139a9e1bd2fe655d829df3
+SHA256: ef87f685512af9fca1ea1221d0e1be1c578bd659c98fde5d7720c81e509e0b09
+Section: Tweaks
+Description: Timed virtual camera for Camera, BeautyCam, Google Lens and Demaecan with a volume-button menu.
+Author: DiCoy Developer <dev@dicoy.local>
+Name: VCAM
+
+Package: com.opa334.libsandy
+Version: 1.1.6-4
+Architecture: iphoneos-arm64
+Maintainer: opa334
+Installed-Size: 420
+Filename: debs/com.opa334.libsandy_1.1.6-4_iphoneos-arm64.deb
+Size: 18154
+MD5sum: f0910991262882d4ffc0b60a5dcc191b
+SHA1: ce71d90d0165ee7325683d4465fb271fc98451c1
+SHA256: 568c98650d8b452d68a1f893ec87f02a4f7082848b1abeec80531c4c9d484065
+Section: System
+Description: Securely extend the sandbox of system processes and user applications
+Tag: role::developer
+Author: opa334
+Depiction: https://moreinfo.thebigboss.org/moreinfo/depiction.php?file=libsandyDp
+Name: libSandy
+

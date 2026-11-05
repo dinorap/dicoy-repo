@@ -1,0 +1,13 @@
+Origin: DiCoy Local
+Label: DiCoy Local
+Suite: stable
+Version: 1.0
+Codename: ios
+Architectures: iphoneos-arm64
+Components: main
+Description: VCAM local builds for iPhone 7 / iOS 15 (rootless)
+Date: Thu, 05 Nov 2026 14:25:12 GMT
+SHA256:
+ b1e62a0ee4664afdd8a53d09f4081043181c1ff99357ff22678c5534379a4eeb 1239 Packages
+ 0983db2efa006208f01b982d80b924f6ebb612e4ecb0567f6dd7f2aa6419b37a 718 Packages.gz
+ 8ab33707759309a911b7f5c8c47390334b85e696b1bf7f3c7c628f81c44094cd 784 Packages.bz2
