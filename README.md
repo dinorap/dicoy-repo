@@ -90,9 +90,10 @@ với SHA256 đúng. Không sửa tay `Packages`/`Release`.
 
 ## Bản đang phát
 
-- `com.dicoy.dicoy` **1.2.3+local25** — bản hiện tại trong `Packages`.
-  Giống local24 nhưng mở menu chỉ bằng **nút tăng âm lượng** (patch
-  `DiCoyHotkey.dylib`: bỏ qua nút giảm, kích hoạt khi chỉ có nút tăng).
+- `com.dicoy.dicoy` **1.2.3+local26** — bản hiện tại trong `Packages`.
+  Giống local24 nhưng tổ hợp mở menu là **nút tăng âm lượng + nút nguồn**
+  (patch `DiCoyHotkey.dylib`: thay mã nút giảm `0xEA` bằng nút nguồn `0x30`).
+- `com.dicoy.dicoy` **1.2.3+local25** — chỉ nút tăng âm lượng, nằm trong `debs/`.
 - `com.dicoy.dicoy` **1.2.3+local24** — bản cũ dùng tổ hợp 2 nút, nằm trong `debs/`.
   Có thêm filter `com.demaecan.DemaecanDriver` (chưa kiểm chứng đầy đủ).
 - `com.dicoy.dicoy` **1.2.3+local23** — bản đã kiểm chứng, nằm trong `debs/`

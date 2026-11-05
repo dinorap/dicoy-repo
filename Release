@@ -6,8 +6,8 @@ Codename: ios
 Architectures: iphoneos-arm64
 Components: main
 Description: VCAM local builds for iPhone 7 / iOS 15 (rootless)
-Date: Thu, 05 Nov 2026 16:54:40 GMT
+Date: Thu, 05 Nov 2026 17:05:19 GMT
 SHA256:
- 982d71d550356ea77f68990236f2ae440ca59ddb27cdddc44de4bf6ccc10410c 1239 Packages
- b561fdb1f1a2b2e384eba657308c5760ddafaa6f82bf1ab39e76cdc20869a921 710 Packages.gz
- 884ccf8d2ee97c7defd1157c0e3dfe570418a3aac8bfc4eb32367a9fe928955e 793 Packages.bz2
+ bb1db2aeb5779d855f6734e303bc1d36e2b1bda5e3517efc4bf3bccd17040326 1239 Packages
+ 353763bd21588f6eb1ccb0514062b53d24703c59c0362d38eb3474929e494a21 709 Packages.gz
+ cb8cf70e469be43a237adacf10afbcdb6c6ed3eda37048f942ec5f366fc7a070 788 Packages.bz2
