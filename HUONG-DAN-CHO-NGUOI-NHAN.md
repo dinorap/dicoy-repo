@@ -38,13 +38,13 @@ iPhone 7 dùng chip A10 (checkm8) nên có 2 cách:
 2. Bấm **Get / Install**.
 3. Sileo tự cài kèm **libSandy** (dependency). Nếu hỏi, chọn **Confirm**.
 4. Sau khi cài xong: **Respring** (hoặc khởi động lại jailbreak).
-5. Mở **Camera** → **giữ đồng thời tăng + giảm âm lượng** → menu hiện.
+5. Mở **Camera** → **bấm nút tăng âm lượng** → menu hiện.
 
 ## D. Dùng nhanh
 
-- **Bật VCAM:** mở app (Camera/BeautyCam/Google) → giữ **cả 2 nút âm lượng**
-  cùng lúc (~0.4 giây) → *Chọn video…* → chọn clip → chọn **5 hoặc 10 phút**.
-- **Tắt riêng app:** bấm lại 2 nút → *Dừng ngay*.
+- **Bật VCAM:** mở app (Camera/BeautyCam/Google) → bấm **nút tăng âm lượng**
+  → *Chọn video…* → chọn clip → chọn **5 hoặc 10 phút**.
+- **Tắt riêng app:** bấm lại nút tăng âm lượng → *Dừng ngay*.
 - **Tắt tất cả:** Cài đặt → **VCAM** → *Tắt tất cả phiên VCAM*.
 - Hết thời gian đã chọn, phiên tự tắt và trở về camera thật.
 
@@ -52,7 +52,7 @@ iPhone 7 dùng chip A10 (checkm8) nên có 2 cách:
 
 | Hiện tượng | Cách xử lý |
 |---|---|
-| Bấm 2 nút không hiện menu | Kiểm tra Dopamine đang bật; respring; mở lại app |
+| Bấm tăng âm lượng không hiện menu | Kiểm tra Dopamine đang bật; respring; mở lại app |
 | Không thấy gói trong Sileo | Bấm **Refresh** nguồn; kiểm tra URL đúng `.../` |
 | Cài lỗi thiếu `mobilesubstrate` | Đảm bảo ElleKit/Substrate đã có (Dopamine lo sẵn) |
 | Muốn quay lại bản cũ | Cài `debs/...local23....deb` thủ công rồi respring |

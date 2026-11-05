@@ -146,13 +146,12 @@ Bấm **"Open in TrollStore"** → TrollStore tự mở và cài Dopamine.
 ## PHẦN 6 — DÙNG VCAM
 
 1. Mở **Camera** (hoặc BeautyCam / Google).
-2. **Giữ ĐỒNG THỜI cả 2 nút tăng + giảm âm lượng** ~0.4 giây rồi nhả.
-   - ⚠️ Không phải bấm 1 nút 2 lần. Phải **cả hai nút cùng lúc**.
+2. **Bấm nút tăng âm lượng** (chỉ cần 1 nút).
 3. Menu hiện → **Chọn video…** → chọn clip trong Ảnh.
 4. Chọn **5 phút** hoặc **10 phút** để thực sự bật.
 5. Chụp/quay bình thường; mở Ảnh kiểm tra file mới.
 
-**Tắt:** bấm lại 2 nút → **Dừng ngay**, hoặc Cài đặt → **VCAM** → *Tắt tất cả*.
+**Tắt:** bấm lại nút tăng âm lượng → **Dừng ngay**, hoặc Cài đặt → **VCAM** → *Tắt tất cả*.
 
 ---
 
@@ -165,7 +164,7 @@ Bấm **"Open in TrollStore"** → TrollStore tự mở và cài Dopamine.
 | Mở Tips không có nút Install TrollStore | Chạy lại TrollRestore, nhập đúng `Tips` |
 | TrollStore mở app bị crash | Settings → **Refresh App Registrations** |
 | Dopamine báo lỗi / treo | Bấm **Apply Workaround**, respring, thử lại |
-| Bấm 2 nút không hiện menu | Dopamine chưa bật → mở Dopamine → Jailbreak |
+| Bấm tăng âm lượng không hiện menu | Dopamine chưa bật → mở Dopamine → Jailbreak |
 | Sileo không thấy VCAM | Bấm **Refresh** nguồn; kiểm tra URL có `/` cuối |
 | Cài báo thiếu `mobilesubstrate` | Dopamine/ElleKit chưa sẵn sàng → respring rồi thử lại |
 

@@ -56,4 +56,4 @@ echo "→ respring"
 sshpass -e ssh "${SSH_OPTS[@]}" "$USER@$IP" \
   "sudo killall SpringBoard || killall SpringBoard || true"
 
-echo "Xong. Mở Camera và giữ đồng thời 2 nút âm lượng."
+echo "Xong. Mở Camera và bấm nút tăng âm lượng."

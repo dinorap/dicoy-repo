@@ -90,7 +90,10 @@ với SHA256 đúng. Không sửa tay `Packages`/`Release`.
 
 ## Bản đang phát
 
-- `com.dicoy.dicoy` **1.2.3+local24** — bản hiện tại trong `Packages`.
+- `com.dicoy.dicoy` **1.2.3+local25** — bản hiện tại trong `Packages`.
+  Giống local24 nhưng mở menu chỉ bằng **nút tăng âm lượng** (patch
+  `DiCoyHotkey.dylib`: bỏ qua nút giảm, kích hoạt khi chỉ có nút tăng).
+- `com.dicoy.dicoy` **1.2.3+local24** — bản cũ dùng tổ hợp 2 nút, nằm trong `debs/`.
   Có thêm filter `com.demaecan.DemaecanDriver` (chưa kiểm chứng đầy đủ).
 - `com.dicoy.dicoy` **1.2.3+local23** — bản đã kiểm chứng, nằm trong `debs/`
   nhưng **không** nằm trong `Packages` (để rollback thủ công).

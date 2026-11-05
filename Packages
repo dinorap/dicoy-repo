@@ -1,14 +1,14 @@
 Package: com.dicoy.dicoy
-Version: 1.2.3+local24
+Version: 1.2.3+local25
 Architecture: iphoneos-arm64
 Maintainer: DiCoy Developer <dev@dicoy.local>
 Installed-Size: 360
 Depends: mobilesubstrate (>= 0.9.5000), preferenceloader, firmware (>= 15.0), com.opa334.libsandy
-Filename: debs/com.dicoy.dicoy_1.2.3+local24_iphoneos-arm64.deb
+Filename: debs/com.dicoy.dicoy_1.2.3+local25_iphoneos-arm64.deb
 Size: 46970
-MD5sum: f5cea07f49c3b633e3a80a0ebd06889f
-SHA1: eb3d6d6d53178b28ab139a9e1bd2fe655d829df3
-SHA256: ef87f685512af9fca1ea1221d0e1be1c578bd659c98fde5d7720c81e509e0b09
+MD5sum: 7eb019d17ae546b6fd504972be9f7984
+SHA1: a236b5946a4f445eeb03bca24f1c555802f61e12
+SHA256: 62b2976a67381f1c5cf351eb247fc8bb66f9e689ceea61dc62edf6a8c76367a6
 Section: Tweaks
 Description: Timed virtual camera for Camera, BeautyCam, Google Lens and Demaecan with a volume-button menu.
 Author: DiCoy Developer <dev@dicoy.local>
