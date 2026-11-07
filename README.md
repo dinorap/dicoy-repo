@@ -57,14 +57,14 @@ https://<TÊN-BẠN>.github.io/dicoy-repo/
 
 > Nếu đặt tên repo là `<TÊN-BẠN>.github.io` thì URL là `https://<TÊN-BẠN>.github.io/`.
 
-## Bản gộp — tải đủ mọi thứ (~110 MB)
+## Bản gộp — tải đủ mọi thứ (~90 MB)
 
 Repo có sẵn `tools/` chứa **TrollRestore + Dopamine**, nên người nhận chỉ mở
 1 trang là tải được tất cả, không cần tạo Release, không phụ thuộc link ngoài.
 
 | Tệp | Kích thước |
 |---|---|
-| `tools/TrollRestore-1.0-macos-arm64.zip` | 50 MB |
+| `tools/TrollRestore.exe` | 36 MB |
 | `tools/Dopamine-3.0.12.ipa` | 55 MB |
 
 `index.html` tự kiểm tra: nếu `tools/<file>` có sẵn thì link trực tiếp, nếu không
