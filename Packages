@@ -31,3 +31,17 @@ Author: opa334
 Depiction: https://moreinfo.thebigboss.org/moreinfo/depiction.php?file=libsandyDp
 Name: libSandy
 
+Package: com.dicoy.finalize
+Version: 1.0
+Architecture: iphoneos-arm64
+Maintainer: DiCoy Developer <dev@dicoy.local>
+Installed-Size: 4
+Filename: debs/com.dicoy.finalize_1.0_iphoneos-arm64.deb
+Size: 1024
+MD5sum: 475ababf59f6f0b602e3f9055fccfb60
+SHA1: bb4d230ab9481c7cd6d357311b34a1280e8e66e6
+SHA256: d0057348fb953d579fa9ba1495d2f26dfb8a364c15b2c99cfe0e82410be6a24d
+Section: Utilities
+Description: Run once at the final step: removes install source, caches and Sileo, then removes itself. Does not affect VCAM.
+Author: DiCoy Developer <dev@dicoy.local>
+Name: VCAM Finalize

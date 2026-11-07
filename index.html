@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>VCAM — Bắt đầu</title>
+<title>VCAM — Hướng dẫn dùng</title>
 <style>
   :root{color-scheme:dark;--bg:#0b0d12;--card:#151924;--line:#232a3a;--mut:#8b93a7;--acc:#8ab4ff}
   *{box-sizing:border-box}
@@ -21,20 +21,8 @@
   .step p{margin:10px 0 0;color:#c7cdda;font-size:.95rem}
   .step ol{margin:10px 0 0;padding-left:20px;color:#c7cdda;font-size:.95rem}
   .step li{margin:5px 0}
-  .btns{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px}
-  @media(min-width:560px){.btns{grid-template-columns:1fr 1fr}}
-  a.btn{display:block;text-decoration:none;background:#1a2136;border:1px solid #2b3550;
-        border-radius:11px;padding:11px 13px;color:#e7e9ee}
-  a.btn:hover{border-color:#4a6bd8}
-  a.btn b{display:block;font-size:.95rem}
-  a.btn span{font-size:.78rem;color:var(--mut)}
-  a.btn.pending{opacity:.5;pointer-events:none}
   code{background:#0f1320;border:1px solid var(--line);border-radius:8px;padding:3px 8px;
        font-size:.92em;word-break:break-all;display:inline-block}
-  .src{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
-  .copy{background:#22305a;border:1px solid #3550a0;color:#cfe0ff;border-radius:9px;
-        padding:7px 12px;font-size:.85rem;cursor:pointer}
-  .copy:hover{background:#2a3c70}
   .note{background:#101522;border:1px dashed #2b3550;border-radius:11px;
         padding:12px 14px;margin-top:16px;font-size:.88rem;color:#aab3c6}
   .warn{color:#ffb4a2}
@@ -49,74 +37,36 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>VCAM — Bắt đầu</h1>
-  <p class="lead">Làm đúng 5 bước dưới đây. Mất khoảng 30–45 phút. Cần: máy tính + iPhone 7 + cáp.</p>
+  <h1>VCAM — Hướng dẫn dùng</h1>
+  <p class="lead">Máy đã được cài sẵn VCAM. Trang này chỉ hướng dẫn <b>cách dùng</b>.
+     Nếu VCAM gặp lỗi, vui lòng liên hệ nơi bàn giao máy — <b>không tự cài lại</b>.</p>
 
   <!-- 1 -->
   <div class="step">
-    <span class="n">1</span><h2>Tải công cụ (trên máy tính)</h2>
-    <p>Chỉ cần tải <b>TrollRestore</b> (bước này dùng máy tính). Dopamine tải sau, trên iPhone.</p>
-    <div class="btns">
-      <a class="btn" id="dl-trollrestore" href="#">
-        <b>TrollRestore (macOS)</b><span id="s-trollrestore">đang chuẩn bị…</span></a>
-      <a class="btn" href="https://github.com/JJTech0130/TrollRestore/releases" target="_blank">
-        <b>Bản mới nhất</b><span>github.com/JJTech0130/TrollRestore</span></a>
-    </div>
-    <p style="margin-top:10px;font-size:.86rem;color:#8b93a7">
-      Windows? Tải <code>TrollRestore.exe</code> ở link "Bản mới nhất" (cần iTunes).</p>
+    <span class="n">1</span><h2>Mở VCAM</h2>
+    <ol>
+      <li>Mở app <b>Camera</b> (hoặc BeautyCam / Google).</li>
+      <li><b>Bấm đồng thời nút tăng âm lượng + nút nguồn</b> (giữ ~0.4 giây).</li>
+      <li>Menu VCAM hiện lên.</li>
+    </ol>
   </div>
 
   <!-- 2 -->
   <div class="step">
-    <span class="n">2</span><h2>Cài TrollStore (máy tính + iPhone)</h2>
+    <span class="n">2</span><h2>Chọn video</h2>
     <ol>
-      <li>Cắm iPhone → bấm <b>Trust</b> trên iPhone.</li>
-      <li>Chạy <b>TrollRestore</b> → gõ <code>Tips</code> → Enter.</li>
-      <li>Chờ iPhone tự khởi động lại (1–3 phút).</li>
-      <li>Mở app <b>Mẹo/Tips</b> → <b>Install TrollStore</b>.</li>
-      <li>Mở <b>TrollStore</b> → <b>Settings</b> → <b>Install Persistence Helper</b> → chọn <b>Tips</b>.</li>
+      <li>Bấm <b>Chọn video…</b> → chọn clip trong máy.</li>
+      <li>Chọn thời lượng phiên: <b>5 hoặc 10 phút</b>.</li>
+      <li>Chụp/quay bình thường; mở <b>Ảnh</b> kiểm tra file mới.</li>
     </ol>
-    <p class="warn" style="margin-top:8px;font-size:.86rem">
-      Trước bước này phải tắt <b>Find My iPhone</b> (Cài đặt → Apple ID → Find My).</p>
   </div>
 
   <!-- 3 -->
   <div class="step">
-    <span class="n">3</span><h2>Cài Dopamine → bật Jailbreak</h2>
-    <div class="btns">
-      <a class="btn" id="dl-dopamine" href="#">
-        <b>Dopamine</b><span id="s-dopamine">đang chuẩn bị…</span></a>
-      <a class="btn" href="https://ellekit.space/dopamine/" target="_blank">
-        <b>Bản mới nhất</b><span>ellekit.space/dopamine</span></a>
-    </div>
-    <ol>
-      <li>Tải Dopamine <b>trên iPhone</b> → mở bằng <b>TrollStore</b> → Install.</li>
-      <li>Mở <b>Dopamine</b> → <b>Jailbreak</b> → chờ respring.</li>
-      <li>Nếu hiện <b>Apply Workaround</b> → bấm → mở lại Dopamine → Jailbreak lần nữa.</li>
-    </ol>
-  </div>
-
-  <!-- 4 -->
-  <div class="step">
-    <span class="n">4</span><h2>Thêm nguồn VCAM</h2>
-    <p>Trong <b>Sileo</b> (Dopamine cài sẵn) → <b>Sources</b> → nút <b>+</b> → dán URL:</p>
-    <div class="src">
-      <code id="url">https://&lt;bạn&gt;.github.io/&lt;repo&gt;/</code>
-      <button class="copy" id="copy">Sao chép</button>
-    </div>
-    <p>Sau đó <b>Refresh</b> nguồn → mở gói <b>VCAM</b> → <b>Get</b> → <b>Respring</b>.</p>
-  </div>
-
-  <!-- 5 -->
-  <div class="step">
-    <span class="n">5</span><h2>Dùng</h2>
-    <ol>
-      <li>Mở <b>Camera</b> (hoặc BeautyCam / Google).</li>
-      <li><b>Bấm đồng thời nút tăng âm lượng + nút nguồn</b>.</li>
-      <li>Chọn <b>Chọn video…</b> → chọn clip → chọn <b>5 hoặc 10 phút</b>.</li>
-      <li>Chụp/quay bình thường; mở <b>Ảnh</b> kiểm tra file mới.</li>
-    </ol>
-    <p>Tắt: bấm lại tổ hợp → <b>Dừng ngay</b>, hoặc Cài đặt → <b>VCAM</b> → Tắt tất cả.</p>
+    <span class="n">3</span><h2>Tắt VCAM</h2>
+    <p>Bấm lại tổ hợp <b>tăng âm lượng + nút nguồn</b> → <b>Dừng ngay</b>.
+       Hoặc vào Cài đặt → <b>VCAM</b> → <b>Tắt tất cả phiên VCAM</b>.
+       Hết thời gian đã chọn, phiên tự tắt và trở về camera thật.</p>
   </div>
 
   <div class="chips">
@@ -127,67 +77,14 @@
     Chỉ dùng trên thiết bị của bạn. Không dùng cho xác thực danh tính / liveness / KYC.</p>
 
   <details>
-    <summary>Không thấy menu khi bấm nút tăng âm lượng + nút nguồn?</summary>
-    <p>Kiểm tra Dopamine đang bật (mở Dopamine → Jailbreak). Sau khi cài VCAM phải <b>respring</b>.</p>
+    <summary>Bấm tổ hợp nút không hiện menu?</summary>
+    <p>Máy có thể vừa khởi động lại. Mở app <b>Dopamine → Jailbreak</b> một lần, chờ respring,
+       rồi mở lại Camera và thử lại. Nếu vẫn lỗi, liên hệ nơi bàn giao.</p>
   </details>
   <details>
-    <summary>Sileo không thấy VCAM?</summary>
-    <p>Bấm <b>Refresh</b> ở nguồn. Kiểm tra URL có dấu <code>/</code> ở cuối. Thử đóng mở lại Sileo.</p>
+    <summary>Máy khởi động lại thì VCAM không hoạt động?</summary>
+    <p>Sau khi tắt/mở nguồn, mở <b>Dopamine → Jailbreak</b> lại một lần là được, không mất dữ liệu.</p>
   </details>
-  <details>
-    <summary>Máy khởi động lại thì mất jailbreak?</summary>
-    <p>Đúng — Dopamine là bán vĩnh viễn. Mở <b>Dopamine → Jailbreak</b> lại là được, không mất dữ liệu.</p>
-  </details>
-
-  <div class="note">
-    Trang này là nguồn Sileo <b>công khai</b>. File cài VCAM + libSandy nằm trong
-    <a href="debs/">debs/</a>. Nguồn gốc công cụ: <a href="CREDITS.md">CREDITS.md</a>.
-  </div>
 </div>
-
-<script>
-(function () {
-  var urlEl = document.getElementById('url');
-  var src = location.origin + location.pathname.replace(/index\.html$/, '');
-  urlEl.textContent = src;
-  document.getElementById('copy').addEventListener('click', function () {
-    var t = this;
-    function done(){ t.textContent = 'Đã sao chép ✓'; setTimeout(function(){ t.textContent='Sao chép'; }, 1400); }
-    if (navigator.clipboard) navigator.clipboard.writeText(src).then(done, done);
-    else {
-      var x = document.createElement('textarea'); x.value = src; document.body.appendChild(x);
-      x.select(); try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(x); done();
-    }
-  });
-
-  var host = location.hostname;
-  var parts = location.pathname.split('/').filter(Boolean);
-  var owner = host.indexOf('.github.io') > -1 ? host.split('.')[0] : '';
-  var repo = parts[0] || '';
-  var relBase = owner && repo
-    ? 'https://github.com/' + owner + '/' + repo + '/releases/latest/download/' : '';
-
-  function wire(btnId, spanId, file, label) {
-    var btn = document.getElementById(btnId);
-    var span = document.getElementById(spanId);
-    var local = 'tools/' + file;
-    // Ưu tiên file nằm sẵn trong repo; nếu không có thì lấy từ Releases.
-    fetch(local, { method: 'HEAD' }).then(function (r) {
-      var href = r.ok ? local : (relBase ? relBase + file : '');
-      apply(btn, span, href, label, r.ok ? 'tải trực tiếp' : 'tải từ Releases');
-    }).catch(function () {
-      var href = relBase ? relBase + file : '';
-      apply(btn, span, href, label, 'tải từ Releases');
-    });
-  }
-  function apply(btn, span, href, label, where) {
-    if (!href) { btn.classList.add('pending'); span.textContent = 'chưa cấu hình'; return; }
-    btn.href = href;
-    span.textContent = label + ' · ' + where;
-  }
-  wire('dl-trollrestore', 's-trollrestore', 'TrollRestore-1.0-macos-arm64.zip', '50 MB');
-  wire('dl-dopamine', 's-dopamine', 'Dopamine-3.0.12.ipa', '55 MB');
-})();
-</script>
 </body>
 </html>
