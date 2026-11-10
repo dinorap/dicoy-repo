@@ -10,10 +10,10 @@ Repo tĩnh để cài **VCAM (`com.dicoy.dicoy`)** lên iPhone 7 đã jailbreak
 | `Packages`, `Packages.gz`, `Packages.bz2` | Chỉ mục gói cho Sileo/APT |
 | `Release` | Metadata + SHA256 của chỉ mục |
 | `debs/` | Gói `.deb` (VCAM + libSandy) |
-| `index.html` | Trang "Bắt đầu" + link tải công cụ chính thức |
-| `new-release.sh` | Sinh lại `Packages`/`Release` sau khi thêm `.deb` |
-| `QUY-TRINH-TU-DAU.md` | **Quy trình từ số 0 cho người mới** (chưa jailbreak → dùng) |
-| `HUONG-DAN-CHO-NGUOI-NHAN.md` | Hướng dẫn nhanh cho người đã có máy jailbreak |
+| `index.html` | Trang hướng dẫn sử dụng nhanh dành cho khách |
+| `cai-dat.html` (`install.html`) | Trang hướng dẫn cài đặt từ A-Z (kèm bước xóa Sileo/cache) |
+| `QUY-TRINH-TU-DAU.md` | **Quy trình từ số 0 cho kỹ thuật viên** (chưa jailbreak → dùng → xóa Sileo) |
+| `HUONG-DAN-CHO-NGUOI-NHAN.md` | Hướng dẫn nhanh cho khách nhận máy đã cài sẵn |
 | `CREDITS.md` | Nguồn gốc, tác giả, giấy phép các công cụ |
 | `RELEASES.md` | Cách đưa 2 file lớn lên GitHub Releases |
 | `setup-github.sh` | **Một lệnh**: tạo repo + push + Release + bật Pages |

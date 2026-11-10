@@ -8,8 +8,12 @@
   :root{color-scheme:dark;--bg:#0b0d12;--card:#151924;--line:#232a3a;--mut:#8b93a7;--acc:#8ab4ff}
   *{box-sizing:border-box}
   body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-       background:var(--bg);color:#e7e9ee;margin:0;padding:28px 16px 60px;line-height:1.6}
+       background:var(--bg);color:#e7e9ee;margin:0;padding:24px 16px 60px;line-height:1.6}
   .wrap{max-width:680px;margin:0 auto}
+  .nav-tabs{display:flex;gap:8px;background:#10141f;padding:4px;border-radius:12px;border:1px solid var(--line);margin-bottom:24px}
+  .nav-tab{flex:1;text-align:center;padding:9px 12px;border-radius:8px;text-decoration:none;font-size:.88rem;font-weight:600;color:var(--mut);transition:all .15s}
+  .nav-tab.active{background:#1e2740;color:#9fb3ff;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+  .nav-tab:hover:not(.active){color:#e7e9ee;background:#151a28}
   h1{font-size:1.55rem;margin:0 0 6px}
   .lead{color:var(--mut);margin:0 0 22px}
   .step{background:var(--card);border:1px solid var(--line);border-radius:14px;
@@ -33,12 +37,20 @@
   .chips{margin:14px 0 0}
   .chip{display:inline-block;background:#1b2438;border:1px solid #2b3550;color:#9fb3ff;
         border-radius:999px;padding:2px 10px;font-size:.78rem;margin:0 6px 6px 0}
+  .switch-box{margin-top:28px;padding:14px 16px;background:#111624;border:1px solid #232c42;border-radius:12px;text-align:center}
+  .switch-box a{font-weight:600;text-decoration:none}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <!-- Nav tabs -->
+  <div class="nav-tabs">
+    <a href="index.html" class="nav-tab active">📱 Dành cho khách (Cách dùng)</a>
+    <a href="cai-dat.html" class="nav-tab">⚙️ Kỹ thuật viên (Cài đặt từ A-Z)</a>
+  </div>
+
   <h1>VCAM — Hướng dẫn dùng</h1>
-  <p class="lead">Máy đã được cài sẵn VCAM. Trang này chỉ hướng dẫn <b>cách dùng</b>.
+  <p class="lead">Máy đã được cài sẵn VCAM khi bàn giao. Trang này chỉ hướng dẫn <b>cách dùng</b>.
      Nếu VCAM gặp lỗi, vui lòng liên hệ nơi bàn giao máy — <b>không tự cài lại</b>.</p>
 
   <!-- 1 -->
@@ -46,8 +58,8 @@
     <span class="n">1</span><h2>Mở VCAM</h2>
     <ol>
       <li>Mở app <b>Camera</b> (hoặc BeautyCam / Google).</li>
-      <li><b>Bấm đồng thời nút tăng âm lượng + nút nguồn</b> (giữ ~0.4 giây).</li>
-      <li>Menu VCAM hiện lên.</li>
+      <li><b>Bấm đồng thời nút tăng âm lượng + nút nguồn</b> (giữ khoảng 0.4 giây).</li>
+      <li>Menu VCAM hiện lên trên màn hình.</li>
     </ol>
   </div>
 
@@ -55,18 +67,18 @@
   <div class="step">
     <span class="n">2</span><h2>Chọn video</h2>
     <ol>
-      <li>Bấm <b>Chọn video…</b> → chọn clip trong máy.</li>
+      <li>Bấm <b>Chọn video…</b> → chọn clip mong muốn trong máy.</li>
       <li>Chọn thời lượng phiên: <b>5 hoặc 10 phút</b>.</li>
-      <li>Chụp/quay bình thường; mở <b>Ảnh</b> kiểm tra file mới.</li>
+      <li>Chụp / quay bình thường; mở <b>Ảnh</b> kiểm tra file mới.</li>
     </ol>
   </div>
 
   <!-- 3 -->
   <div class="step">
     <span class="n">3</span><h2>Tắt VCAM</h2>
-    <p>Bấm lại tổ hợp <b>tăng âm lượng + nút nguồn</b> → <b>Dừng ngay</b>.
-       Hoặc vào Cài đặt → <b>VCAM</b> → <b>Tắt tất cả phiên VCAM</b>.
-       Hết thời gian đã chọn, phiên tự tắt và trở về camera thật.</p>
+    <p>Bấm lại tổ hợp <b>tăng âm lượng + nút nguồn</b> → chọn <b>Dừng ngay</b>.<br>
+       Hoặc vào Cài đặt → <b>VCAM</b> → <b>Tắt tất cả phiên VCAM</b>.<br>
+       Hết thời gian đã chọn, phiên sẽ tự tắt và quay về camera thật.</p>
   </div>
 
   <div class="chips">
@@ -78,13 +90,18 @@
 
   <details>
     <summary>Bấm tổ hợp nút không hiện menu?</summary>
-    <p>Máy có thể vừa khởi động lại. Mở app <b>Dopamine → Jailbreak</b> một lần, chờ respring,
-       rồi mở lại Camera và thử lại. Nếu vẫn lỗi, liên hệ nơi bàn giao.</p>
+    <p>Máy có thể vừa khởi động lại hoặc hết pin. Mở app <b>Dopamine → Jailbreak</b> một lần, chờ respring,
+       rồi mở lại Camera và thử lại. Nếu vẫn không được, vui lòng liên hệ nơi bàn giao máy.</p>
   </details>
   <details>
-    <summary>Máy khởi động lại thì VCAM không hoạt động?</summary>
-    <p>Sau khi tắt/mở nguồn, mở <b>Dopamine → Jailbreak</b> lại một lần là được, không mất dữ liệu.</p>
+    <summary>Máy khởi động lại thì VCAM có hoạt động không?</summary>
+    <p>Sau khi tắt máy hoặc khởi động lại, chỉ cần mở lại <b>Dopamine → Jailbreak</b> một lần là dùng lại bình thường, không bị mất dữ liệu hay mất cấu hình.</p>
   </details>
+
+  <div class="switch-box">
+    Bạn là người chuẩn bị máy hoặc cần cài từ đầu?<br>
+    👉 <a href="cai-dat.html">Xem Hướng dẫn cài đặt trọn gói A-Z (kèm bước xóa Sileo/Cache)</a>
+  </div>
 </div>
 </body>
 </html>

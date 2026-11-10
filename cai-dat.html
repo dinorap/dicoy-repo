@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VCAM — Hướng dẫn cài đặt từ A-Z</title>
+<style>
+  :root{color-scheme:dark;--bg:#0b0d12;--card:#151924;--line:#232a3a;--mut:#8b93a7;--acc:#8ab4ff;--green:#7ce38b;--orange:#ffb347}
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+       background:var(--bg);color:#e7e9ee;margin:0;padding:24px 16px 60px;line-height:1.6}
+  .wrap{max-width:680px;margin:0 auto}
+  .nav-tabs{display:flex;gap:8px;background:#10141f;padding:4px;border-radius:12px;border:1px solid var(--line);margin-bottom:24px}
+  .nav-tab{flex:1;text-align:center;padding:9px 12px;border-radius:8px;text-decoration:none;font-size:.88rem;font-weight:600;color:var(--mut);transition:all .15s}
+  .nav-tab.active{background:#1e2740;color:#9fb3ff;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+  .nav-tab:hover:not(.active){color:#e7e9ee;background:#151a28}
+  h1{font-size:1.55rem;margin:0 0 6px}
+  .lead{color:var(--mut);margin:0 0 22px}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:14px;
+        padding:18px 20px;margin:14px 0;position:relative}
+  .step.highlight{border-color:#3e5488;background:#161c2d}
+  .step .n{display:inline-flex;align-items:center;justify-content:center;
+           width:26px;height:26px;border-radius:8px;background:#1e2740;color:#9fb3ff;
+           font-weight:700;font-size:.9rem;margin-right:8px;vertical-align:middle}
+  .step.highlight .n{background:#2b3c66;color:#b4c6ff}
+  .step h2{display:inline;font-size:1.02rem;margin:0}
+  .step p{margin:10px 0 0;color:#c7cdda;font-size:.95rem}
+  .step ol{margin:10px 0 0;padding-left:20px;color:#c7cdda;font-size:.95rem}
+  .step li{margin:6px 0}
+  .btns{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px}
+  @media(min-width:560px){.btns{grid-template-columns:1fr 1fr}}
+  a.btn{display:block;text-decoration:none;background:#1a2136;border:1px solid #2b3550;
+        border-radius:11px;padding:11px 13px;color:#e7e9ee;transition:border-color .15s}
+  a.btn:hover{border-color:#4a6bd8}
+  a.btn b{display:block;font-size:.95rem}
+  a.btn span{font-size:.78rem;color:var(--mut)}
+  a.btn.pending{opacity:.5;pointer-events:none}
+  code{background:#0f1320;border:1px solid var(--line);border-radius:8px;padding:3px 8px;
+       font-size:.92em;word-break:break-all;display:inline-block}
+  .src{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+  .copy{background:#22305a;border:1px solid #3550a0;color:#cfe0ff;border-radius:9px;
+        padding:7px 14px;font-size:.85rem;cursor:pointer}
+  .copy:hover{background:#2a3c70}
+  .badge-clean{display:inline-block;background:#2d1d17;border:1px solid #633320;color:#ffa884;
+               border-radius:6px;font-size:.76rem;padding:2px 8px;margin-left:8px;vertical-align:middle;font-weight:600}
+  .note{background:#101522;border:1px dashed #2b3550;border-radius:11px;
+        padding:12px 14px;margin-top:16px;font-size:.88rem;color:#aab3c6}
+  .warn{color:#ffb4a2}
+  a{color:var(--acc)}
+  details{margin-top:12px}
+  summary{cursor:pointer;color:#cfd6e6;font-size:.92rem}
+  details p{color:#aab3c6;font-size:.88rem}
+  .chips{margin:14px 0 0}
+  .chip{display:inline-block;background:#1b2438;border:1px solid #2b3550;color:#9fb3ff;
+        border-radius:999px;padding:2px 10px;font-size:.78rem;margin:0 6px 6px 0}
+  .switch-box{margin-top:28px;padding:14px 16px;background:#111624;border:1px solid #232c42;border-radius:12px;text-align:center}
+  .switch-box a{font-weight:600;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- Nav tabs -->
+  <div class="nav-tabs">
+    <a href="index.html" class="nav-tab">📱 Dành cho khách (Cách dùng)</a>
+    <a href="cai-dat.html" class="nav-tab active">⚙️ Kỹ thuật viên (Cài đặt từ A-Z)</a>
+  </div>
+
+  <h1>VCAM — Hướng dẫn cài đặt trọn gói</h1>
+  <p class="lead">Dành cho kỹ thuật viên hoặc người tự chuẩn bị máy từ số 0. Gồm các bước cắm máy tính, jailbreak, cài tweak và <b>dọn dẹp xóa sạch Sileo / Cache</b> trước khi bàn giao cho khách.</p>
+
+  <!-- 1 -->
+  <div class="step">
+    <span class="n">1</span><h2>Chuẩn bị & Tải công cụ (trên máy tính)</h2>
+    <p>Tải <b>TrollRestore</b> cho máy tính của bạn:</p>
+    <div class="btns">
+      <a class="btn" id="dl-trollrestore-win" href="tools/TrollRestore.exe">
+        <b>TrollRestore.exe (Windows)</b><span>tải trực tiếp từ repo</span></a>
+      <a class="btn" href="https://github.com/JJTech0130/TrollRestore/releases" target="_blank">
+        <b>Bản cho macOS / Linux</b><span>github.com/JJTech0130/TrollRestore</span></a>
+    </div>
+    <ol style="margin-top:12px">
+      <li><b>Windows:</b> Cần cài đặt <b>iTunes</b> để máy nhận diện iPhone.</li>
+      <li>Cắm iPhone vào máy tính → Bấm <b>Tin cậy (Trust)</b> trên iPhone và nhập mật khẩu mở khóa.</li>
+      <li><b>TẮT Find My iPhone (bắt buộc):</b> Trên iPhone vào <i>Cài đặt → [Apple ID của bạn] → Tìm (Find My) → Tìm iPhone → Tắt</i> (nhập mật khẩu Apple ID để xác nhận).</li>
+    </ol>
+  </div>
+
+  <!-- 2 -->
+  <div class="step">
+    <span class="n">2</span><h2>Cài TrollStore (máy tính + iPhone)</h2>
+    <ol>
+      <li>Mở <b>TrollRestore.exe</b> trên máy tính.</li>
+      <li>Khi cửa sổ hỏi tên app muốn ghi đè, gõ: <code>Tips</code> rồi nhấn <b>Enter</b>.</li>
+      <li>Chờ 1–2 phút cho iPhone tự khởi động lại.</li>
+      <li>Mở iPhone → Mở ứng dụng <b>Mẹo (Tips)</b>.</li>
+      <li>Bấm <b>Install TrollStore</b> → Chờ máy respring, app TrollStore xuất hiện ở màn hình chính.</li>
+      <li>Mở <b>TrollStore</b> → tab <b>Settings</b> → bấm <b>Install Persistence Helper</b> → chọn <b>Tips</b> (giúp giữ quyền vĩnh viễn).</li>
+    </ol>
+  </div>
+
+  <!-- 3 -->
+  <div class="step">
+    <span class="n">3</span><h2>Cài Dopamine → Bật Jailbreak</h2>
+    <div class="btns">
+      <a class="btn" id="dl-dopamine" href="tools/Dopamine-3.0.12.ipa">
+        <b>Dopamine IPA</b><span>tools/Dopamine-3.0.12.ipa</span></a>
+      <a class="btn" href="https://ellekit.space/dopamine/" target="_blank">
+        <b>Cài trực tiếp trên iPhone</b><span>ellekit.space/dopamine</span></a>
+    </div>
+    <ol style="margin-top:12px">
+      <li>Mở Safari trên iPhone vào <code>https://ellekit.space/dopamine/</code> → chọn <b>Open in TrollStore</b> → bấm <b>Install</b> (hoặc gửi file IPA qua TrollStore).</li>
+      <li>Mở app <b>Dopamine</b> trên màn hình chính → bấm <b>Jailbreak</b>.</li>
+      <li>Chờ máy respring (nếu hiện <i>Apply Workaround</i>, bấm vào rồi mở lại Dopamine và bấm Jailbreak lần nữa).</li>
+      <li>Khi jailbreak xong, ứng dụng <b>Sileo</b> sẽ xuất hiện trên màn hình.</li>
+    </ol>
+  </div>
+
+  <!-- 4 -->
+  <div class="step">
+    <span class="n">4</span><h2>Thêm nguồn & Cài VCAM</h2>
+    <p>Mở <b>Sileo</b> → tab <b>Sources (Nguồn)</b> → bấm dấu <b>+</b> (góc trên bên phải) → dán link nguồn:</p>
+    <div class="src">
+      <code id="url">https://dinorap.github.io/dicoy-repo/</code>
+      <button class="copy" id="copy">Sao chép</button>
+    </div>
+    <ol style="margin-top:12px">
+      <li>Sau khi thêm nguồn, bấm <b>Refresh</b> (Làm mới).</li>
+      <li>Mở nguồn vừa thêm → chọn gói <b>VCAM</b> → bấm <b>Get (Nhận)</b>.</li>
+      <li>Sileo sẽ tự động kéo kèm thư viện <b>libSandy</b> → bấm <b>Confirm</b> để cài đặt.</li>
+      <li>Cài xong bấm <b>Respring</b> để áp dụng tweak.</li>
+    </ol>
+  </div>
+
+  <!-- 5 -->
+  <div class="step highlight">
+    <span class="n">5</span><h2>Dọn dẹp bàn giao (Xóa Sileo & Cache)</h2>
+    <span class="badge-clean">Bước quan trọng trước khi giao máy</span>
+    <p>Để máy sạch sẽ, bảo mật và tránh khách bấm nhầm làm hỏng cài đặt, hãy xóa bỏ Sileo và các file tạm:</p>
+    <ol>
+      <li>Mở lại ứng dụng <b>Sileo</b>.</li>
+      <li>Vào nguồn của bạn → tìm và chọn gói <b>VCAM Finalize</b>.</li>
+      <li>Bấm <b>Get (Nhận)</b> → chọn <b>Confirm</b> để chạy gói.</li>
+      <li><b>Tiến trình tự động dọn dẹp sẽ thực hiện:</b>
+        <ul>
+          <li>🧹 Tự động xóa nguồn repo khỏi danh sách APT.</li>
+          <li>🧹 Dọn sạch toàn bộ bộ nhớ cache APT và các file <code>.deb</code> tải tạm trong máy.</li>
+          <li>🧹 Tự động gỡ bỏ hoàn toàn ứng dụng <b>Sileo</b> (và tự xóa chính gói Finalize).</li>
+          <li>🧹 Làm mới lại màn hình chính (<code>uicache</code>): icon Sileo biến mất hoàn toàn.</li>
+        </ul>
+      </li>
+      <li>Máy hoàn toàn sạch bóng, không còn kho tweak, nhưng <b>VCAM vẫn hoạt động 100%</b>.</li>
+    </ol>
+  </div>
+
+  <!-- 6 -->
+  <div class="step">
+    <span class="n">6</span><h2>Kiểm tra & Bàn giao</h2>
+    <ol>
+      <li>Mở app <b>Camera</b> (hoặc BeautyCam / Google).</li>
+      <li><b>Bấm đồng thời nút tăng âm lượng + nút nguồn</b> (giữ ~0.4 giây).</li>
+      <li>Menu VCAM hiện lên → bấm <b>Chọn video…</b> → chọn 1 clip test → chọn <b>5 hoặc 10 phút</b>.</li>
+      <li>Chụp / quay thử xem video ảo đã hiển thị chuẩn chưa.</li>
+      <li>Tắt test: bấm lại tổ hợp nút → <b>Dừng ngay</b>.</li>
+      <li>Giao máy cho khách và gửi kèm link: <code>https://dinorap.github.io/dicoy-repo/</code></li>
+    </ol>
+  </div>
+
+  <div class="chips">
+    <span class="chip">Camera</span><span class="chip">BeautyCam</span>
+    <span class="chip">Google Lens</span>
+  </div>
+
+  <div class="switch-box">
+    Cần xem giao diện rút gọn gửi cho khách?<br>
+    👉 <a href="index.html">Xem Trang hướng dẫn dùng cho khách (3 bước gọn)</a>
+  </div>
+</div>
+
+<script>
+(function () {
+  var urlEl = document.getElementById('url');
+  var src = location.origin + location.pathname.replace(/\/(cai-dat|install|index)?\.html$/, '/');
+  if (!src.endsWith('/')) src += '/';
+  urlEl.textContent = src;
+
+  var copyBtn = document.getElementById('copy');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', function () {
+      var t = this;
+      function done(){ t.textContent = 'Đã chép ✓'; setTimeout(function(){ t.textContent='Sao chép'; }, 1400); }
+      if (navigator.clipboard) navigator.clipboard.writeText(src).then(done, done);
+      else {
+        var x = document.createElement('textarea'); x.value = src; document.body.appendChild(x);
+        x.select(); try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(x); done();
+      }
+    });
+  }
+})();
+</script>
+</body>
+</html>
