@@ -131,3 +131,4 @@ Gửi cho khách đường link rút gọn chỉ hướng dẫn cách dùng:
 **Dặn khách 2 điều duy nhất:**
 1. **Cách bật video:** Mở Camera → Bấm đồng thời *Tăng âm lượng + Nguồn*.
 2. **Nếu máy hết pin / khởi động lại:** Mở app **Dopamine** → bấm **Jailbreak** một lần là dùng lại bình thường (không mất cấu hình, không cần máy tính).
+
