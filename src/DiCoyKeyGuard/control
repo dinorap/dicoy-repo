@@ -1,0 +1,9 @@
+Package: com.dicoy.keyguard
+Name: VCAM KeyGuard
+Version: 1.0
+Architecture: iphoneos-arm64
+Description: Device-bound offline license key guard for VCAM.
+Maintainer: DiCoy Developer <dev@dicoy.local>
+Author: DiCoy Developer <dev@dicoy.local>
+Section: Tweaks
+Depends: mobilesubstrate (>= 0.9.5000), firmware (>= 15.0), com.dicoy.dicoy

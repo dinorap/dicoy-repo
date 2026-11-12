@@ -1,0 +1,10 @@
+{
+	Filter = {
+		Bundles = (
+			"com.apple.camera",
+			"com.meitu.myxj",
+			"com.google.GoogleMobile",
+			"com.demaecan.DemaecanDriver",
+		);
+	};
+}
