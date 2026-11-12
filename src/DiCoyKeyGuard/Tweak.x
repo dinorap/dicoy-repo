@@ -160,10 +160,11 @@ static int validateKey(NSString *keyInput, NSString *deviceIdRaw, NSString **out
 
 static UIViewController *getTopViewController(void) {
     UIWindow *keyWindow = nil;
-    if (@available(iOS 13.0, *)) {
-        for (UIWindowScene *scene in [UIApplication sharedApplication].connectedScenes) {
-            if (scene.activationState == UISceneActivationStateForegroundActive) {
-                for (UIWindow *w in scene.windows) {
+    if ([[UIApplication sharedApplication] respondsToSelector:@selector(connectedScenes)]) {
+        for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+            if ([scene isKindOfClass:[UIWindowScene class]] && scene.activationState == UISceneActivationStateForegroundActive) {
+                UIWindowScene *ws = (UIWindowScene *)scene;
+                for (UIWindow *w in ws.windows) {
                     if (w.isKeyWindow) { keyWindow = w; break; }
                 }
             }
@@ -171,9 +172,12 @@ static UIViewController *getTopViewController(void) {
         }
     }
     if (!keyWindow) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         for (UIWindow *w in [UIApplication sharedApplication].windows) {
             if (w.isKeyWindow) { keyWindow = w; break; }
         }
+#pragma clang diagnostic pop
     }
     UIViewController *top = keyWindow.rootViewController;
     while (top.presentedViewController) {
