@@ -3,6 +3,7 @@
 #import <CommonCrypto/CommonDigest.h>
 #import <dlfcn.h>
 #import <objc/runtime.h>
+#import <string.h>
 
 static NSString *const kKeyGuardPrefsPath = @"/var/mobile/Library/Preferences/com.dicoy.keyguard.plist";
 static NSString *const kKeyGuardDefaultsKey = @"DiCoyKeyGuardLicenseKey";
