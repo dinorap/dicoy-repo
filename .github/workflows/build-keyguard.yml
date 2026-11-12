@@ -19,13 +19,12 @@ jobs:
       - name: Install Theos and iOS SDK on Linux
         run: |
           sudo apt-get update
-          sudo apt-get install -y git curl clang lld llvm dpkg-dev fakeroot zip unzip xz-utils libtinfo5 || sudo apt-get install -y git curl clang lld llvm dpkg-dev fakeroot zip unzip xz-utils
+          sudo apt-get install -y build-essential fakeroot rsync curl perl git libxml2 dpkg-dev xz-utils
           git clone --depth=1 --recursive https://github.com/theos/theos.git $HOME/theos
-          mkdir -p $HOME/theos/sdks
+          mkdir -p $HOME/theos/sdks $HOME/theos/toolchain
           curl -sL https://github.com/theos/sdks/archive/refs/heads/master.tar.gz | tar -xz -C $HOME/theos/sdks --strip-components=1 "sdks-master/iPhoneOS16.5.sdk"
-          mkdir -p $HOME/theos/toolchain/linux/iphone/bin
+          curl -sL https://github.com/L1ghtmann/llvm-project/releases/latest/download/iOSToolchain-x86_64.tar.xz | tar -xJf - -C $HOME/theos/toolchain/
           curl -sL https://github.com/ProcursusTeam/ldid/releases/latest/download/ldid_linux_x86_64 -o /tmp/ldid && chmod +x /tmp/ldid && sudo mv /tmp/ldid /usr/local/bin/ldid
-          curl -sL https://github.com/theos/dm.pl/archive/refs/heads/master.tar.gz | tar -xz -C $HOME/theos/vendor/dm.pl --strip-components=1 || true
 
       - name: Build DiCoyKeyGuard rootless deb
         env:
