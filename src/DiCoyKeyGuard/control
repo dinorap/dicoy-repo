@@ -7,3 +7,4 @@ Maintainer: DiCoy Developer <dev@dicoy.local>
 Author: DiCoy Developer <dev@dicoy.local>
 Section: Tweaks
 Depends: mobilesubstrate (>= 0.9.5000), firmware (>= 15.0), com.dicoy.dicoy
+

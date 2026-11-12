@@ -231,6 +231,14 @@ static void showActivationPrompt(DiCoyTweakManager *manager, NSString *customErr
             }
         }];
 
+        UIAlertAction *copyLinkAction = [UIAlertAction actionWithTitle:@"Copy Link lấy Key"
+                                                                 style:UIAlertActionStyleDefault
+                                                               handler:^(UIAlertAction *action) {
+            NSString *reqLink = [NSString stringWithFormat:@"https://dinorap.github.io/dicoy-repo/key.html?id=%@", rawId];
+            [UIPasteboard generalPasteboard].string = reqLink;
+            showActivationPrompt(manager, @"Đã copy link! Dán gửi Admin để nhận Key.");
+        }];
+
         UIAlertAction *copyAction = [UIAlertAction actionWithTitle:@"Copy Mã máy"
                                                              style:UIAlertActionStyleDefault
                                                            handler:^(UIAlertAction *action) {
@@ -243,6 +251,7 @@ static void showActivationPrompt(DiCoyTweakManager *manager, NSString *customErr
                                                              handler:nil];
 
         [alert addAction:activateAction];
+        [alert addAction:copyLinkAction];
         [alert addAction:copyAction];
         [alert addAction:cancelAction];
 
@@ -272,3 +281,4 @@ static void showActivationPrompt(DiCoyTweakManager *manager, NSString *customErr
     }
     %init;
 }
+

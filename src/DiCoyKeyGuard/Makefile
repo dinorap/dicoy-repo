@@ -11,3 +11,4 @@ zDiCoyKeyGuard_CFLAGS = -fobjc-arc
 zDiCoyKeyGuard_FRAMEWORKS = UIKit Foundation
 
 include $(THEOS_MAKE_PATH)/tweak.mk
+

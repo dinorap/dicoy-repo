@@ -12,14 +12,20 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install tools and Theos
+      - name: Install Theos and iOS SDK on Linux
         run: |
-          brew install ldid dpkg
+          sudo apt-get update
+          sudo apt-get install -y git curl clang lld llvm dpkg-dev fakeroot zip unzip xz-utils libtinfo5 || sudo apt-get install -y git curl clang lld llvm dpkg-dev fakeroot zip unzip xz-utils
           git clone --depth=1 --recursive https://github.com/theos/theos.git $HOME/theos
+          mkdir -p $HOME/theos/sdks
+          curl -sL https://github.com/theos/sdks/archive/refs/heads/master.tar.gz | tar -xz -C $HOME/theos/sdks --strip-components=1 "sdks-master/iPhoneOS16.5.sdk"
+          mkdir -p $HOME/theos/toolchain/linux/iphone/bin
+          curl -sL https://github.com/ProcursusTeam/ldid/releases/latest/download/ldid_linux_x86_64 -o /tmp/ldid && chmod +x /tmp/ldid && sudo mv /tmp/ldid /usr/local/bin/ldid
+          curl -sL https://github.com/theos/dm.pl/archive/refs/heads/master.tar.gz | tar -xz -C $HOME/theos/vendor/dm.pl --strip-components=1 || true
 
       - name: Build DiCoyKeyGuard rootless deb
         env:
@@ -49,7 +55,7 @@ jobs:
             echo "Date: $(LC_ALL=C date -u '+%a, %d %b %Y %H:%M:%S GMT')"
             echo "SHA256:"
             for f in Packages Packages.gz Packages.bz2; do
-              printf " %s %s %s\n" "$(shasum -a 256 "$f" | awk '{print $1}')" "$(wc -c < "$f" | tr -d ' ')" "$f"
+              printf " %s %s %s\n" "$(sha256sum "$f" | cut -d' ' -f1)" "$(wc -c < "$f" | tr -d ' ')" "$f"
             done
           } > Release
 
