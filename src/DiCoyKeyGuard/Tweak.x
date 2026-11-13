@@ -10,6 +10,11 @@ static NSString *const kKeyGuardDefaultsKey = @"DiCoyKeyGuardLicenseKey";
 static NSString *const kDeviceIdDefaultsKey = @"DiCoyKeyGuardDeviceID";
 static NSString *const kSecretSalt = @"DiCoyVCAM#2026!SecretKey";
 
+@interface DiCoySessionController : NSObject
++ (instancetype)sharedController;
+- (void)showMenu;
+@end
+
 @interface DiCoyTweakManager : NSObject
 + (instancetype)sharedManager;
 - (void)showMenu;
@@ -186,7 +191,7 @@ static UIViewController *getTopViewController(void) {
     return top;
 }
 
-static void showActivationPrompt(DiCoyTweakManager *manager, NSString *customError) {
+static void showActivationPrompt(id controllerOrManager, NSString *customError) {
     dispatch_async(dispatch_get_main_queue(), ^{
         UIViewController *topVC = getTopViewController();
         if (!topVC) return;
@@ -226,13 +231,15 @@ static void showActivationPrompt(DiCoyTweakManager *manager, NSString *customErr
                 [okAlert addAction:[UIAlertAction actionWithTitle:@"Mở VCAM"
                                                             style:UIAlertActionStyleDefault
                                                           handler:^(UIAlertAction *a) {
-                    [manager showMenu];
+                    if ([controllerOrManager respondsToSelector:@selector(showMenu)]) {
+                        [controllerOrManager showMenu];
+                    }
                 }]];
                 [topVC presentViewController:okAlert animated:YES completion:nil];
             } else if (status == 2) {
-                showActivationPrompt(manager, @"Key đã hết hạn sử dụng!");
+                showActivationPrompt(controllerOrManager, @"Key đã hết hạn sử dụng!");
             } else {
-                showActivationPrompt(manager, @"Key không hợp lệ cho mã máy này!");
+                showActivationPrompt(controllerOrManager, @"Key không hợp lệ cho mã máy này!");
             }
         }];
 
@@ -241,14 +248,14 @@ static void showActivationPrompt(DiCoyTweakManager *manager, NSString *customErr
                                                                handler:^(UIAlertAction *action) {
             NSString *reqLink = [NSString stringWithFormat:@"https://dinorap.github.io/dicoy-repo/key.html?id=%@", rawId];
             [UIPasteboard generalPasteboard].string = reqLink;
-            showActivationPrompt(manager, @"Đã copy link! Dán gửi Admin để nhận Key.");
+            showActivationPrompt(controllerOrManager, @"Đã copy link! Dán gửi Admin để nhận Key.");
         }];
 
         UIAlertAction *copyAction = [UIAlertAction actionWithTitle:@"Copy Mã máy"
                                                              style:UIAlertActionStyleDefault
                                                            handler:^(UIAlertAction *action) {
             [UIPasteboard generalPasteboard].string = displayId;
-            showActivationPrompt(manager, [NSString stringWithFormat:@"Đã copy mã máy: %@", displayId]);
+            showActivationPrompt(controllerOrManager, [NSString stringWithFormat:@"Đã copy mã máy: %@", displayId]);
         }];
 
         UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Đóng"
@@ -263,6 +270,22 @@ static void showActivationPrompt(DiCoyTweakManager *manager, NSString *customErr
         [topVC presentViewController:alert animated:YES completion:nil];
     });
 }
+
+%hook DiCoySessionController
+
+- (void)showMenu {
+    NSString *rawId = getDeviceIdRaw();
+    NSString *savedKey = getSavedLicenseKey();
+    int status = validateKey(savedKey, rawId, nil);
+    if (status == 0) {
+        %orig;
+        return;
+    }
+    NSString *err = (status == 2) ? @"Key của bạn đã hết hạn." : nil;
+    showActivationPrompt(self, err);
+}
+
+%end
 
 %hook DiCoyTweakManager
 
@@ -281,9 +304,7 @@ static void showActivationPrompt(DiCoyTweakManager *manager, NSString *customErr
 %end
 
 %ctor {
-    if (!objc_getClass("DiCoyTweakManager")) {
-        dlopen("/var/jb/Library/MobileSubstrate/DynamicLibraries/DiCoyTweak.dylib", RTLD_LAZY);
-    }
+    dlopen("/var/jb/Library/MobileSubstrate/DynamicLibraries/DiCoyTweak.dylib", RTLD_NOW);
     %init;
 }
 
