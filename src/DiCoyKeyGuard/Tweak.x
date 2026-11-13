@@ -3,22 +3,20 @@
 #import <CommonCrypto/CommonDigest.h>
 #import <dlfcn.h>
 #import <objc/runtime.h>
-#import <string.h>
+#import <mach-o/dyld.h>
+#import <substrate.h>
 
-static NSString *const kKeyGuardPrefsPath = @"/var/mobile/Library/Preferences/com.dicoy.keyguard.plist";
+static NSString *const kKeyGuardDir = @"/var/mobile/Library/Application Support/VCAM";
+static NSString *const kKeyGuardCameraDir = @"/var/mobile/Library/Application Support/VCAM/com.apple.camera";
+static NSString *const kKeyGuardPrefsPath = @"/var/mobile/Library/Application Support/VCAM/com.apple.camera/license.plist";
+static NSString *const kKeyGuardFallbackPath = @"/var/mobile/Library/Preferences/com.dicoy.keyguard.plist";
 static NSString *const kKeyGuardDefaultsKey = @"DiCoyKeyGuardLicenseKey";
 static NSString *const kDeviceIdDefaultsKey = @"DiCoyKeyGuardDeviceID";
 static NSString *const kSecretSalt = @"DiCoyVCAM#2026!SecretKey";
+static NSString *const kMasterKey1 = @"99999999-DICOYVIP";
+static NSString *const kMasterKey2 = @"88888888-88888888";
 
-@interface DiCoySessionController : NSObject
-+ (instancetype)sharedController;
-- (void)showMenu;
-@end
-
-@interface DiCoyTweakManager : NSObject
-+ (instancetype)sharedManager;
-- (void)showMenu;
-@end
+static void (*orig_showMenu)(id self, SEL _cmd) = NULL;
 
 static void applySandyProfileIfNeeded(void) {
     static dispatch_once_t onceToken;
@@ -30,6 +28,8 @@ static void applySandyProfileIfNeeded(void) {
             libSandyApplyProfileFunc applyFn = (libSandyApplyProfileFunc)dlsym(handle, "libSandy_applyProfile");
             if (applyFn) {
                 applyFn("DiCoyControl");
+                applyFn("DiCoyKeyGuard");
+                applyFn("DiCoyCamera");
             }
         }
     });
@@ -48,17 +48,31 @@ static NSString *sha256Hex(NSString *input) {
 
 static NSMutableDictionary *loadPrefs(void) {
     applySandyProfileIfNeeded();
-    NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithContentsOfFile:kKeyGuardPrefsPath];
-    if (!dict) dict = [NSMutableDictionary dictionary];
-    return dict;
+    NSArray *paths = @[
+        kKeyGuardPrefsPath,
+        [kKeyGuardDir stringByAppendingPathComponent:@"license.plist"],
+        kKeyGuardFallbackPath
+    ];
+    for (NSString *p in paths) {
+        if ([[NSFileManager defaultManager] fileExistsAtPath:p]) {
+            NSMutableDictionary *d = [NSMutableDictionary dictionaryWithContentsOfFile:p];
+            if (d && d.count > 0) return d;
+        }
+    }
+    return [NSMutableDictionary dictionary];
 }
 
 static void savePrefs(NSMutableDictionary *dict) {
     applySandyProfileIfNeeded();
+    [[NSFileManager defaultManager] createDirectoryAtPath:kKeyGuardCameraDir withIntermediateDirectories:YES attributes:nil error:nil];
+    [[NSFileManager defaultManager] createDirectoryAtPath:kKeyGuardDir withIntermediateDirectories:YES attributes:nil error:nil];
+
     [dict writeToFile:kKeyGuardPrefsPath atomically:YES];
+    [dict writeToFile:[kKeyGuardDir stringByAppendingPathComponent:@"license.plist"] atomically:YES];
+    [dict writeToFile:kKeyGuardFallbackPath atomically:YES];
 }
 
-// Returns 8-char uppercase hex Device ID (without dash), e.g. "A3F98B2C"
+// Returns 8-char uppercase hex Device ID, e.g. "A3F98B2C"
 static NSString *getDeviceIdRaw(void) {
     NSMutableDictionary *prefs = loadPrefs();
     NSString *stored = prefs[@"deviceId"];
@@ -126,8 +140,15 @@ static void saveLicenseKey(NSString *key) {
 // Validates key format: YYYYMMDD-XXXXXXXX
 // Returns: 0 = valid, 1 = invalid format/signature, 2 = expired
 static int validateKey(NSString *keyInput, NSString *deviceIdRaw, NSString **outExpiryFormatted) {
-    if (!keyInput) return 1;
+    if (!keyInput || keyInput.length == 0) return 1;
     NSString *cleaned = [[keyInput stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] uppercaseString];
+
+    // Master keys bypass
+    if ([cleaned isEqualToString:kMasterKey1] || [cleaned isEqualToString:kMasterKey2]) {
+        if (outExpiryFormatted) *outExpiryFormatted = @"Vĩnh viễn (Master Key)";
+        return 0;
+    }
+
     NSArray *parts = [cleaned componentsSeparatedByString:@"-"];
     if (parts.count != 2) return 1;
 
@@ -163,35 +184,65 @@ static int validateKey(NSString *keyInput, NSString *deviceIdRaw, NSString **out
     return 0;
 }
 
+static uintptr_t getDiCoyBaseAddress(void) {
+    uint32_t count = _dyld_image_count();
+    for (uint32_t i = 0; i < count; i++) {
+        const char *name = _dyld_get_image_name(i);
+        if (name && strstr(name, "DiCoyTweak.dylib")) {
+            return (uintptr_t)_dyld_get_image_header(i);
+        }
+    }
+    return 0;
+}
+
 static UIViewController *getTopViewController(void) {
-    UIWindow *keyWindow = nil;
+    // 1. Try DiCoyTweak's internal topViewController helper at 0xe3f4
+    uintptr_t base = getDiCoyBaseAddress();
+    if (base != 0) {
+        typedef UIViewController *(*DiCoyTopVCFunc)(void);
+        DiCoyTopVCFunc fn = (DiCoyTopVCFunc)(base + 0xe3f4);
+        @try {
+            UIViewController *vc = fn();
+            if (vc && [vc isKindOfClass:[UIViewController class]]) {
+                return vc;
+            }
+        } @catch (...) {}
+    }
+
+    // 2. Cascade through active scenes & windows
+    UIWindow *candidate = nil;
     if ([[UIApplication sharedApplication] respondsToSelector:@selector(connectedScenes)]) {
         for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
-            if ([scene isKindOfClass:[UIWindowScene class]] && scene.activationState == UISceneActivationStateForegroundActive) {
+            if ([scene isKindOfClass:[UIWindowScene class]]) {
                 UIWindowScene *ws = (UIWindowScene *)scene;
                 for (UIWindow *w in ws.windows) {
-                    if (w.isKeyWindow) { keyWindow = w; break; }
+                    if (w.isKeyWindow) { candidate = w; break; }
+                    if (!candidate && !w.hidden) candidate = w;
                 }
             }
-            if (keyWindow) break;
+            if (candidate && candidate.isKeyWindow) break;
         }
     }
-    if (!keyWindow) {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-        for (UIWindow *w in [UIApplication sharedApplication].windows) {
-            if (w.isKeyWindow) { keyWindow = w; break; }
+
+    if (!candidate) {
+        NSArray *windows = [UIApplication sharedApplication].windows;
+        for (UIWindow *w in windows) {
+            if (w.isKeyWindow) { candidate = w; break; }
+            if (!candidate && !w.hidden) candidate = w;
         }
-#pragma clang diagnostic pop
+        if (!candidate && [UIApplication sharedApplication].keyWindow) {
+            candidate = [UIApplication sharedApplication].keyWindow;
+        }
     }
-    UIViewController *top = keyWindow.rootViewController;
+
+    UIViewController *top = candidate.rootViewController;
     while (top.presentedViewController) {
         top = top.presentedViewController;
     }
     return top;
 }
 
-static void showActivationPrompt(id controllerOrManager, NSString *customError) {
+static void showActivationPrompt(id controller, NSString *customError) {
     dispatch_async(dispatch_get_main_queue(), ^{
         UIViewController *topVC = getTopViewController();
         if (!topVC) return;
@@ -231,15 +282,15 @@ static void showActivationPrompt(id controllerOrManager, NSString *customError) 
                 [okAlert addAction:[UIAlertAction actionWithTitle:@"Mở VCAM"
                                                             style:UIAlertActionStyleDefault
                                                           handler:^(UIAlertAction *a) {
-                    if ([controllerOrManager respondsToSelector:@selector(showMenu)]) {
-                        [controllerOrManager showMenu];
+                    if (orig_showMenu) {
+                        orig_showMenu(controller, @selector(showMenu));
                     }
                 }]];
                 [topVC presentViewController:okAlert animated:YES completion:nil];
             } else if (status == 2) {
-                showActivationPrompt(controllerOrManager, @"Key đã hết hạn sử dụng!");
+                showActivationPrompt(controller, @"Key đã hết hạn sử dụng!");
             } else {
-                showActivationPrompt(controllerOrManager, @"Key không hợp lệ cho mã máy này!");
+                showActivationPrompt(controller, @"Key không hợp lệ cho mã máy này!");
             }
         }];
 
@@ -248,14 +299,14 @@ static void showActivationPrompt(id controllerOrManager, NSString *customError) 
                                                                handler:^(UIAlertAction *action) {
             NSString *reqLink = [NSString stringWithFormat:@"https://dinorap.github.io/dicoy-repo/key.html?id=%@", rawId];
             [UIPasteboard generalPasteboard].string = reqLink;
-            showActivationPrompt(controllerOrManager, @"Đã copy link! Dán gửi Admin để nhận Key.");
+            showActivationPrompt(controller, @"Đã copy link! Dán gửi Admin để nhận Key.");
         }];
 
         UIAlertAction *copyAction = [UIAlertAction actionWithTitle:@"Copy Mã máy"
                                                              style:UIAlertActionStyleDefault
                                                            handler:^(UIAlertAction *action) {
             [UIPasteboard generalPasteboard].string = displayId;
-            showActivationPrompt(controllerOrManager, [NSString stringWithFormat:@"Đã copy mã máy: %@", displayId]);
+            showActivationPrompt(controller, [NSString stringWithFormat:@"Đã copy mã máy: %@", displayId]);
         }];
 
         UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Đóng"
@@ -271,40 +322,40 @@ static void showActivationPrompt(id controllerOrManager, NSString *customError) 
     });
 }
 
-%hook DiCoySessionController
-
-- (void)showMenu {
+static void my_showMenu(id self, SEL _cmd) {
     NSString *rawId = getDeviceIdRaw();
     NSString *savedKey = getSavedLicenseKey();
     int status = validateKey(savedKey, rawId, nil);
     if (status == 0) {
-        %orig;
+        if (orig_showMenu) {
+            orig_showMenu(self, _cmd);
+        }
         return;
     }
     NSString *err = (status == 2) ? @"Key của bạn đã hết hạn." : nil;
     showActivationPrompt(self, err);
 }
-
-%end
-
-%hook DiCoyTweakManager
-
-- (void)showMenu {
-    NSString *rawId = getDeviceIdRaw();
-    NSString *savedKey = getSavedLicenseKey();
-    int status = validateKey(savedKey, rawId, nil);
-    if (status == 0) {
-        %orig;
-        return;
-    }
-    NSString *err = (status == 2) ? @"Key của bạn đã hết hạn." : nil;
-    showActivationPrompt(self, err);
-}
-
-%end
 
 %ctor {
     dlopen("/var/jb/Library/MobileSubstrate/DynamicLibraries/DiCoyTweak.dylib", RTLD_NOW);
-    %init;
-}
+    dlopen("/Library/MobileSubstrate/DynamicLibraries/DiCoyTweak.dylib", RTLD_NOW);
 
+    uintptr_t base = getDiCoyBaseAddress();
+    if (base != 0) {
+        // Direct function hook at 0xe714 (the exact entry point of showMenu in DiCoyTweak.dylib)
+        // Intercepts BOTH direct 'bl 0xe714' from Darwin notification callback AND objc_msgSend!
+        void *target0xe714 = (void *)(base + 0xe714);
+        MSHookFunction(target0xe714, (void *)my_showMenu, (void **)&orig_showMenu);
+    }
+
+    Class cls = objc_getClass("DiCoySessionController");
+    if (cls) {
+        Method m = class_getInstanceMethod(cls, @selector(showMenu));
+        if (m) {
+            void *imp = (void *)method_getImplementation(m);
+            if (imp && imp != (void *)my_showMenu && (!orig_showMenu || imp != (void *)(base + 0xe714))) {
+                MSHookFunction(imp, (void *)my_showMenu, (void **)&orig_showMenu);
+            }
+        }
+    }
+}

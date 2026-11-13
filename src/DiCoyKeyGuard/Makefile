@@ -7,8 +7,7 @@ include $(THEOS)/makefiles/common.mk
 TWEAK_NAME = zDiCoyKeyGuard
 
 zDiCoyKeyGuard_FILES = Tweak.x
-zDiCoyKeyGuard_CFLAGS = -fobjc-arc
+zDiCoyKeyGuard_CFLAGS = -fobjc-arc -Wno-deprecated-declarations
 zDiCoyKeyGuard_FRAMEWORKS = UIKit Foundation
 
 include $(THEOS_MAKE_PATH)/tweak.mk
-
