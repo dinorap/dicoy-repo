@@ -9,9 +9,9 @@ Replaces: com.dicoy.keyguard
 Provides: com.dicoy.keyguard
 Filename: debs/com.dicoy.dicoy_1.2.3+local27_iphoneos-arm64.deb
 Size: 77042
-MD5sum: 0de299f8f3c37ba69eeb3e9b217a5bd5
-SHA1: 95cfbf74c6cf8712e32ce08917cdf5bc0aab3493
-SHA256: 5282f93070bbd716a760a494424a3d5c97974cbefbeb2fa818157ef55ab2c04d
+MD5sum: 0f56f5ac02f3503224d597703ad7d083
+SHA1: 953c8f42cba8c566a60b6c089cc64c7dcd8cf965
+SHA256: 8e5683bd69ab0c4a6dbd90bb766eefaacb2161eeb8e0d079794474edcec7f75d
 Section: Tweaks
 Description: Timed virtual camera with Activation License KeyGuard for Camera, BeautyCam, Google Lens and Demaecan.
 Author: DiCoy Developer <dev@dicoy.local>
