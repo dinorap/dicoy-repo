@@ -161,6 +161,8 @@ def bundle_vcam_keyguard(base_deb, keyguard_deb, sandy_profile, out_deb):
     ctrl = ctrl.replace("Version: 1.2.3+local26", "Version: 1.2.3+local27")
     ctrl = ctrl.replace("Description: Timed virtual camera for Camera, BeautyCam, Google Lens and Demaecan with a volume-button menu.",
                         "Description: Timed virtual camera with Activation License KeyGuard for Camera, BeautyCam, Google Lens and Demaecan.")
+    if "Replaces:" not in ctrl:
+        ctrl = ctrl.strip() + "\nReplaces: com.dicoy.keyguard\nProvides: com.dicoy.keyguard\nConflicts: com.dicoy.keyguard\n"
     with open(control_file, "w", encoding="utf-8") as f:
         f.write(ctrl)
 
