@@ -157,8 +157,9 @@ def bundle_vcam_keyguard(base_deb, keyguard_deb, sandy_profile, out_deb):
     with open(control_file, "r", encoding="utf-8") as f:
         ctrl = f.read()
 
-    # Update version to 1.2.3+local27
-    ctrl = ctrl.replace("Version: 1.2.3+local26", "Version: 1.2.3+local27")
+    # Update version to 1.2.3+local28
+    ctrl = ctrl.replace("Version: 1.2.3+local26", "Version: 1.2.3+local28")
+    ctrl = ctrl.replace("Version: 1.2.3+local27", "Version: 1.2.3+local28")
     ctrl = ctrl.replace("Description: Timed virtual camera for Camera, BeautyCam, Google Lens and Demaecan with a volume-button menu.",
                         "Description: Timed virtual camera with Activation License KeyGuard for Camera, BeautyCam, Google Lens and Demaecan.")
     if "Replaces:" not in ctrl:
@@ -187,10 +188,12 @@ chmod -R 777 "/var/mobile/Library/Application Support/VCAM" 2>/dev/null || true
     shutil.rmtree(work_dir)
 
 if __name__ == "__main__":
+    if os.path.exists("debs/com.dicoy.dicoy_1.2.3+local27_iphoneos-arm64.deb"):
+        os.remove("debs/com.dicoy.dicoy_1.2.3+local27_iphoneos-arm64.deb")
     bundle_vcam_keyguard(
         "debs/com.dicoy.dicoy_1.2.3+local26_iphoneos-arm64.deb",
         "debs/com.dicoy.keyguard_1.1_iphoneos-arm64.deb",
         "src/DiCoyKeyGuard/DiCoyKeyGuard.plist",
-        "debs/com.dicoy.dicoy_1.2.3+local27_iphoneos-arm64.deb"
+        "debs/com.dicoy.dicoy_1.2.3+local28_iphoneos-arm64.deb"
     )
 

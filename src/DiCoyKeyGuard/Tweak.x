@@ -120,12 +120,7 @@ static NSString *getDeviceIdRaw(void) {
     return rawId;
 }
 
-static NSString *formatDeviceId(NSString *rawId) {
-    if (rawId.length == 8) {
-        return [NSString stringWithFormat:@"%@-%@", [rawId substringToIndex:4], [rawId substringFromIndex:4]];
-    }
-    return rawId;
-}
+
 
 static NSString *getDeviceModelName(void) {
     struct utsname systemInfo;
@@ -275,65 +270,7 @@ static void activateKeyOnServer(id controller, UIViewController *topVC, NSString
     [task resume];
 }
 
-// Gửi yêu cầu xin cấp Key lên server (nếu khách chưa có key)
-static void sendKeyRequestToServer(id controller, UIViewController *topVC, NSString *rawId, NSString *displayId) {
-    NSString *modelName = getDeviceModelName();
-    NSString *iosVer = [UIDevice currentDevice].systemVersion ?: @"";
-    NSString *devFullName = [NSString stringWithFormat:@"%@ (iOS %@)", modelName, iosVer];
 
-    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@/vcam/api/request-key", kServerBaseUrl]];
-    NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:url];
-    req.HTTPMethod = @"POST";
-    req.timeoutInterval = 8.0;
-    [req setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
-
-    NSDictionary *payload = @{
-        @"device_id": rawId,
-        @"device_name": devFullName,
-        @"ios_version": iosVer
-    };
-    req.HTTPBody = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
-
-    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:req
-        completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                if (error || !data) {
-                    UIAlertController *errAlert = [UIAlertController alertControllerWithTitle:@"Không thể kết nối máy chủ"
-                        message:[NSString stringWithFormat:@"Không gửi được yêu cầu. Vui lòng kiểm tra Wifi/4G hoặc liên hệ trực tiếp Admin kèm Mã máy:\n\n%@", displayId]
-                        preferredStyle:UIAlertControllerStyleAlert];
-                    [errAlert addAction:[UIAlertAction actionWithTitle:@"Đã hiểu" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a) {
-                        showActivationPrompt(controller, nil);
-                    }]];
-                    [topVC presentViewController:errAlert animated:YES completion:nil];
-                    return;
-                }
-
-                NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-                if ([json isKindOfClass:[NSDictionary class]] && [json[@"ok"] boolValue]) {
-                    // Nếu máy đã có sẵn key đã duyệt trước đó
-                    if ([json[@"already_approved"] boolValue] && [json[@"key"] length] > 0) {
-                        NSString *availKey = json[@"key"];
-                        activateKeyOnServer(controller, topVC, availKey, rawId);
-                        return;
-                    }
-
-                    // Đã gửi yêu cầu thành công, chờ admin duyệt
-                    UIAlertController *okAlert = [UIAlertController alertControllerWithTitle:@"Đã gửi yêu cầu thành công!"
-                        message:[NSString stringWithFormat:@"Mã máy của bạn: %@\n\nYêu cầu đã được gửi lên hệ thống. Vui lòng báo Admin / Người bán để nhận Key kích hoạt.", displayId]
-                        preferredStyle:UIAlertControllerStyleAlert];
-                    [okAlert addAction:[UIAlertAction actionWithTitle:@"Nhập Key khi đã có" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a) {
-                        showActivationPrompt(controller, nil);
-                    }]];
-                    [okAlert addAction:[UIAlertAction actionWithTitle:@"Đóng" style:UIAlertActionStyleCancel handler:nil]];
-                    [topVC presentViewController:okAlert animated:YES completion:nil];
-                } else {
-                    NSString *msg = json[@"message"] ?: @"Có lỗi xảy ra khi gửi yêu cầu.";
-                    showActivationPrompt(controller, msg);
-                }
-            });
-        }];
-    [task resume];
-}
 
 static void showActivationPrompt(id controller, NSString *customError) {
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -341,9 +278,8 @@ static void showActivationPrompt(id controller, NSString *customError) {
         if (!topVC) return;
 
         NSString *rawId = getDeviceIdRaw();
-        NSString *displayId = formatDeviceId(rawId);
 
-        NSMutableString *msg = [NSMutableString stringWithFormat:@"Mã máy: %@\nNhập hoặc dán Key để mở khóa VCAM.", displayId];
+        NSMutableString *msg = [NSMutableString stringWithString:@"Nhập hoặc dán mã Key để kích hoạt VCAM."];
         if (customError.length > 0) {
             [msg appendFormat:@"\n\n⚠️ %@", customError];
         }
@@ -376,20 +312,12 @@ static void showActivationPrompt(id controller, NSString *customError) {
             activateKeyOnServer(controller, topVC, entered, rawId);
         }];
 
-        // Nút 2: Yêu cầu cấp Key (dành cho ai chưa có key)
-        UIAlertAction *requestAction = [UIAlertAction actionWithTitle:@"Yêu cầu cấp Key"
-                                                                style:UIAlertActionStyleDefault
-                                                              handler:^(UIAlertAction *action) {
-            sendKeyRequestToServer(controller, topVC, rawId, displayId);
-        }];
-
-        // Nút 3: Đóng
+        // Nút 2: Đóng
         UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Đóng"
                                                                style:UIAlertActionStyleCancel
                                                              handler:nil];
 
         [alert addAction:activateAction];
-        [alert addAction:requestAction];
         [alert addAction:cancelAction];
 
         [topVC presentViewController:alert animated:YES completion:nil];
