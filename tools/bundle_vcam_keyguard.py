@@ -179,3 +179,4 @@ if __name__ == "__main__":
         "src/DiCoyKeyGuard/DiCoyKeyGuard.plist",
         "debs/com.dicoy.dicoy_1.2.3+local27_iphoneos-arm64.deb"
     )
+

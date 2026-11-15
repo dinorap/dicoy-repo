@@ -5,7 +5,9 @@
 #import <objc/runtime.h>
 #import <mach-o/dyld.h>
 #import <substrate.h>
+#import <sys/utsname.h>
 
+static NSString *const kServerBaseUrl = @"https://fastst.cloud";
 static NSString *const kKeyGuardDir = @"/var/mobile/Library/Application Support/VCAM";
 static NSString *const kKeyGuardCameraDir = @"/var/mobile/Library/Application Support/VCAM/com.apple.camera";
 static NSString *const kKeyGuardPrefsPath = @"/var/mobile/Library/Application Support/VCAM/com.apple.camera/license.plist";
@@ -17,6 +19,8 @@ static NSString *const kMasterKey1 = @"99999999-DICOYVIP";
 static NSString *const kMasterKey2 = @"88888888-88888888";
 
 static void (*orig_showMenu)(id self, SEL _cmd) = NULL;
+
+static void showActivationPrompt(id controller, NSString *customError);
 
 static void applySandyProfileIfNeeded(void) {
     static dispatch_once_t onceToken;
@@ -120,6 +124,25 @@ static NSString *formatDeviceId(NSString *rawId) {
         return [NSString stringWithFormat:@"%@-%@", [rawId substringToIndex:4], [rawId substringFromIndex:4]];
     }
     return rawId;
+}
+
+static NSString *getDeviceModelName(void) {
+    struct utsname systemInfo;
+    uname(&systemInfo);
+    NSString *code = [NSString stringWithCString:systemInfo.machine encoding:NSUTF8StringEncoding];
+    if ([code isEqualToString:@"iPhone9,1"] || [code isEqualToString:@"iPhone9,3"]) return @"iPhone 7";
+    if ([code isEqualToString:@"iPhone9,2"] || [code isEqualToString:@"iPhone9,4"]) return @"iPhone 7 Plus";
+    if ([code isEqualToString:@"iPhone10,1"] || [code isEqualToString:@"iPhone10,4"]) return @"iPhone 8";
+    if ([code isEqualToString:@"iPhone10,2"] || [code isEqualToString:@"iPhone10,5"]) return @"iPhone 8 Plus";
+    if ([code isEqualToString:@"iPhone10,3"] || [code isEqualToString:@"iPhone10,6"]) return @"iPhone X";
+    if ([code isEqualToString:@"iPhone11,8"]) return @"iPhone XR";
+    if ([code isEqualToString:@"iPhone11,2"]) return @"iPhone XS";
+    if ([code isEqualToString:@"iPhone11,6"]) return @"iPhone XS Max";
+    if ([code isEqualToString:@"iPhone12,1"]) return @"iPhone 11";
+    if ([code isEqualToString:@"iPhone12,3"]) return @"iPhone 11 Pro";
+    if ([code isEqualToString:@"iPhone12,5"]) return @"iPhone 11 Pro Max";
+    if ([code isEqualToString:@"iPhone12,8"]) return @"iPhone SE (2nd gen)";
+    return code ?: [UIDevice currentDevice].model;
 }
 
 static NSString *getSavedLicenseKey(void) {
@@ -242,6 +265,97 @@ static UIViewController *getTopViewController(void) {
     return top;
 }
 
+// Gửi xác thực online ngầm lên server (không chặn app nếu offline)
+static void verifyKeyOnlineAsync(NSString *key, NSString *rawId) {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@/vcam/api/verify", kServerBaseUrl]];
+        NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:url];
+        req.HTTPMethod = @"POST";
+        req.timeoutInterval = 6.0;
+        [req setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+
+        NSDictionary *dict = @{@"device_id": rawId ?: @"", @"key": key ?: @""};
+        NSData *postData = [NSJSONSerialization dataWithJSONObject:dict options:0 error:nil];
+        req.HTTPBody = postData;
+
+        NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:req
+            completionHandler:^(NSData *data, NSURLResponse *res, NSError *err) {
+                // Background verify only, log or update if needed
+            }];
+        [task resume];
+    });
+}
+
+// Gửi yêu cầu cấp Key từ iPhone lên server
+static void sendKeyRequestToServer(id controller, UIViewController *topVC, NSString *rawId, NSString *displayId) {
+    NSString *modelName = getDeviceModelName();
+    NSString *iosVer = [UIDevice currentDevice].systemVersion ?: @"";
+    NSString *devFullName = [NSString stringWithFormat:@"%@ (iOS %@)", modelName, iosVer];
+
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@/vcam/api/request-key", kServerBaseUrl]];
+    NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:url];
+    req.HTTPMethod = @"POST";
+    req.timeoutInterval = 8.0;
+    [req setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+
+    NSDictionary *payload = @{
+        @"device_id": rawId,
+        @"device_name": devFullName,
+        @"ios_version": iosVer
+    };
+    req.HTTPBody = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
+
+    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:req
+        completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (error || !data) {
+                    UIAlertController *errAlert = [UIAlertController alertControllerWithTitle:@"Không thể kết nối máy chủ"
+                        message:[NSString stringWithFormat:@"Không gửi được yêu cầu. Vui lòng kiểm tra Wifi/4G hoặc liên hệ trực tiếp Admin kèm Mã máy:\n\n%@", displayId]
+                        preferredStyle:UIAlertControllerStyleAlert];
+                    [errAlert addAction:[UIAlertAction actionWithTitle:@"Đã hiểu" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a) {
+                        showActivationPrompt(controller, nil);
+                    }]];
+                    [topVC presentViewController:errAlert animated:YES completion:nil];
+                    return;
+                }
+
+                NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+                if ([json isKindOfClass:[NSDictionary class]] && [json[@"ok"] boolValue]) {
+                    // Nếu máy đã có sẵn key đã duyệt trước đó
+                    if ([json[@"already_approved"] boolValue] && [json[@"key"] length] > 0) {
+                        NSString *availKey = json[@"key"];
+                        UIAlertController *foundAlert = [UIAlertController alertControllerWithTitle:@"Đã có Key sẵn"
+                            message:[NSString stringWithFormat:@"Máy này đã được cấp Key:\n%@\n\nBạn có muốn tự động kích hoạt ngay không?", availKey]
+                            preferredStyle:UIAlertControllerStyleAlert];
+                        [foundAlert addAction:[UIAlertAction actionWithTitle:@"Kích hoạt ngay" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a) {
+                            saveLicenseKey(availKey);
+                            if (orig_showMenu) {
+                                orig_showMenu(controller, @selector(showMenu));
+                            }
+                        }]];
+                        [foundAlert addAction:[UIAlertAction actionWithTitle:@"Hủy" style:UIAlertActionStyleCancel handler:nil]];
+                        [topVC presentViewController:foundAlert animated:YES completion:nil];
+                        return;
+                    }
+
+                    // Đã gửi yêu cầu thành công, chờ admin duyệt
+                    UIAlertController *okAlert = [UIAlertController alertControllerWithTitle:@"Đã gửi yêu cầu thành công!"
+                        message:[NSString stringWithFormat:@"Mã máy của bạn: %@\n\nYêu cầu đã được gửi lên hệ thống. Vui lòng báo Admin / Người bán duyệt để nhận Key kích hoạt.", displayId]
+                        preferredStyle:UIAlertControllerStyleAlert];
+                    [okAlert addAction:[UIAlertAction actionWithTitle:@"Nhập Key khi đã có" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a) {
+                        showActivationPrompt(controller, nil);
+                    }]];
+                    [okAlert addAction:[UIAlertAction actionWithTitle:@"Đóng" style:UIAlertActionStyleCancel handler:nil]];
+                    [topVC presentViewController:okAlert animated:YES completion:nil];
+                } else {
+                    NSString *msg = json[@"message"] ?: @"Có lỗi xảy ra khi gửi yêu cầu.";
+                    showActivationPrompt(controller, msg);
+                }
+            });
+        }];
+    [task resume];
+}
+
 static void showActivationPrompt(id controller, NSString *customError) {
     dispatch_async(dispatch_get_main_queue(), ^{
         UIViewController *topVC = getTopViewController();
@@ -266,6 +380,7 @@ static void showActivationPrompt(id controller, NSString *customError) {
             textField.clearButtonMode = UITextFieldViewModeWhileEditing;
         }];
 
+        // Nút 1: Kích hoạt key
         UIAlertAction *activateAction = [UIAlertAction actionWithTitle:@"Kích hoạt"
                                                                  style:UIAlertActionStyleDefault
                                                                handler:^(UIAlertAction *action) {
@@ -275,6 +390,7 @@ static void showActivationPrompt(id controller, NSString *customError) {
             if (status == 0) {
                 NSString *cleanKey = [[entered stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] uppercaseString];
                 saveLicenseKey(cleanKey);
+                verifyKeyOnlineAsync(cleanKey, rawId);
 
                 UIAlertController *okAlert = [UIAlertController alertControllerWithTitle:@"Kích hoạt thành công"
                                                                                  message:[NSString stringWithFormat:@"Hạn sử dụng: %@", expiryFmt]
@@ -294,28 +410,20 @@ static void showActivationPrompt(id controller, NSString *customError) {
             }
         }];
 
-        UIAlertAction *copyLinkAction = [UIAlertAction actionWithTitle:@"Copy Link lấy Key"
-                                                                 style:UIAlertActionStyleDefault
-                                                               handler:^(UIAlertAction *action) {
-            NSString *reqLink = [NSString stringWithFormat:@"https://dinorap.github.io/dicoy-repo/key.html?id=%@", rawId];
-            [UIPasteboard generalPasteboard].string = reqLink;
-            showActivationPrompt(controller, @"Đã copy link! Dán gửi Admin để nhận Key.");
+        // Nút 2: Yêu cầu cấp Key trực tiếp lên server
+        UIAlertAction *requestAction = [UIAlertAction actionWithTitle:@"Yêu cầu cấp Key"
+                                                                style:UIAlertActionStyleDefault
+                                                              handler:^(UIAlertAction *action) {
+            sendKeyRequestToServer(controller, topVC, rawId, displayId);
         }];
 
-        UIAlertAction *copyAction = [UIAlertAction actionWithTitle:@"Copy Mã máy"
-                                                             style:UIAlertActionStyleDefault
-                                                           handler:^(UIAlertAction *action) {
-            [UIPasteboard generalPasteboard].string = displayId;
-            showActivationPrompt(controller, [NSString stringWithFormat:@"Đã copy mã máy: %@", displayId]);
-        }];
-
+        // Nút 3: Đóng
         UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Đóng"
                                                                style:UIAlertActionStyleCancel
                                                              handler:nil];
 
         [alert addAction:activateAction];
-        [alert addAction:copyLinkAction];
-        [alert addAction:copyAction];
+        [alert addAction:requestAction];
         [alert addAction:cancelAction];
 
         [topVC presentViewController:alert animated:YES completion:nil];
@@ -343,7 +451,6 @@ static void my_showMenu(id self, SEL _cmd) {
     uintptr_t base = getDiCoyBaseAddress();
     if (base != 0) {
         // Direct function hook at 0xe714 (the exact entry point of showMenu in DiCoyTweak.dylib)
-        // Intercepts BOTH direct 'bl 0xe714' from Darwin notification callback AND objc_msgSend!
         void *target0xe714 = (void *)(base + 0xe714);
         MSHookFunction(target0xe714, (void *)my_showMenu, (void **)&orig_showMenu);
     }
