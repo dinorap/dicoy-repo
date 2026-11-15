@@ -146,75 +146,6 @@ static NSString *getDeviceModelName(void) {
     return code ?: [UIDevice currentDevice].model;
 }
 
-// Kiểm tra bản quyền đã lưu trong máy
-// 0 = hợp lệ, 1 = không có/không hợp lệ, 2 = hết hạn
-static int validateSavedLicense(NSString *rawId, NSString **outExpiryFormatted) {
-    if (!rawId || rawId.length != 8) return 1;
-
-    NSMutableDictionary *prefs = loadPrefs();
-    NSString *key = prefs[@"licenseKey"];
-    NSString *expireAt = prefs[@"expireAt"];
-    NSString *sig = prefs[@"signature"];
-    NSString *expFmt = prefs[@"expireFormatted"];
-
-    if (!key || key.length == 0) {
-        key = [[NSUserDefaults standardUserDefaults] stringForKey:kKeyGuardDefaultsKey];
-        if (!key || key.length == 0) return 1;
-    }
-
-    // 1. Kiểm tra chữ ký Server (chuẩn VCAM-XXXX-XXXX-XXXX)
-    if (sig && sig.length == 16 && expireAt && expireAt.length == 8) {
-        NSString *payload = [NSString stringWithFormat:@"%@:%@:%@:%@", rawId, key, expireAt, kSecretSalt];
-        NSString *expectedSig = [sha256Hex(payload) substringToIndex:16];
-        if (![sig isEqualToString:expectedSig]) {
-            return 1;
-        }
-
-        NSDateFormatter *df = [[NSDateFormatter alloc] init];
-        df.dateFormat = @"yyyyMMdd";
-        df.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-        NSString *todayStr = [df stringFromDate:[NSDate date]];
-
-        if (outExpiryFormatted) {
-            *outExpiryFormatted = expFmt ?: ([expireAt isEqualToString:@"20991231"] ? @"Vĩnh viễn" : expireAt);
-        }
-
-        if (![expireAt isEqualToString:@"20991231"] && ![expireAt isEqualToString:@"99991231"]) {
-            if ([todayStr integerValue] > [expireAt integerValue]) {
-                return 2; // Hết hạn
-            }
-        }
-        return 0; // Hợp lệ
-    }
-
-    // 2. Tương thích định dạng cũ YYYYMMDD-XXXXXXXX
-    NSArray *parts = [key componentsSeparatedByString:@"-"];
-    if (parts.count == 2) {
-        NSString *expStr = parts[0];
-        NSString *sigStr = parts[1];
-        if (expStr.length == 8 && sigStr.length == 8) {
-            NSString *payload = [NSString stringWithFormat:@"%@:%@:%@", rawId, expStr, kSecretSalt];
-            NSString *expectedSig = [sha256Hex(payload) substringToIndex:8];
-            if ([sigStr isEqualToString:expectedSig]) {
-                NSDateFormatter *df = [[NSDateFormatter alloc] init];
-                df.dateFormat = @"yyyyMMdd";
-                df.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-                NSString *todayStr = [df stringFromDate:[NSDate date]];
-                if (outExpiryFormatted) {
-                    *outExpiryFormatted = [expStr isEqualToString:@"20991231"] ? @"Vĩnh viễn" : [NSString stringWithFormat:@"%@/%@/%@",
-                        [expStr substringWithRange:NSMakeRange(6, 2)],
-                        [expStr substringWithRange:NSMakeRange(4, 2)],
-                        [expStr substringWithRange:NSMakeRange(0, 4)]];
-                }
-                if ([todayStr integerValue] > [expStr integerValue]) return 2;
-                return 0;
-            }
-        }
-    }
-
-    return 1;
-}
-
 static uintptr_t getDiCoyBaseAddress(void) {
     uint32_t count = _dyld_image_count();
     for (uint32_t i = 0; i < count; i++) {
@@ -269,41 +200,6 @@ static UIViewController *getTopViewController(void) {
         top = top.presentedViewController;
     }
     return top;
-}
-
-// Xác thực online ngầm lên server
-static void verifyKeyOnlineAsync(NSString *key, NSString *rawId) {
-    if (!key || key.length == 0 || !rawId || rawId.length == 0) return;
-
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@/vcam/api/verify", kServerBaseUrl]];
-        NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:url];
-        req.HTTPMethod = @"POST";
-        req.timeoutInterval = 6.0;
-        [req setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
-
-        NSDictionary *dict = @{@"device_id": rawId, @"key": key};
-        req.HTTPBody = [NSJSONSerialization dataWithJSONObject:dict options:0 error:nil];
-
-        NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:req
-            completionHandler:^(NSData *data, NSURLResponse *res, NSError *err) {
-                if (data && !err) {
-                    NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-                    if ([json isKindOfClass:[NSDictionary class]] && [json[@"ok"] boolValue]) {
-                        if (![json[@"valid"] boolValue]) {
-                            // Key bị admin khóa hoặc hết hạn trên server -> xóa license cục bộ
-                            dispatch_async(dispatch_get_main_queue(), ^{
-                                NSMutableDictionary *prefs = loadPrefs();
-                                [prefs removeObjectForKey:@"licenseKey"];
-                                [prefs removeObjectForKey:@"signature"];
-                                savePrefs(prefs);
-                            });
-                        }
-                    }
-                }
-            }];
-        [task resume];
-    });
 }
 
 // Khách dán Key vào và ấn Kích hoạt -> Gửi mã máy lên server để tự động gắn Key vào máy
@@ -502,7 +398,7 @@ static void showActivationPrompt(id controller, NSString *customError) {
 
 static BOOL isVerifyingKey = NO;
 
-static void my_showMenu(id self, SEL _cmd) {
+static void my_showMenu(id targetObj, SEL targetCmd) {
     NSString *rawId = getDeviceIdRaw();
     NSMutableDictionary *prefs = loadPrefs();
     NSString *savedKey = prefs[@"licenseKey"];
@@ -511,12 +407,15 @@ static void my_showMenu(id self, SEL _cmd) {
     }
 
     if (!savedKey || savedKey.length == 0) {
-        showActivationPrompt(self, nil);
+        showActivationPrompt(targetObj, nil);
         return;
     }
 
     if (isVerifyingKey) return;
     isVerifyingKey = YES;
+
+    __strong id strongTarget = targetObj;
+    SEL strongCmd = targetCmd;
 
     // Gửi request xác thực trực tiếp lên Server để lấy thời gian thực từ Server (chống khách chỉnh giờ trên iPhone)
     NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@/vcam/api/verify", kServerBaseUrl]];
@@ -553,7 +452,7 @@ static void my_showMenu(id self, SEL _cmd) {
                     if ([json[@"valid"] boolValue]) {
                         // Server chứng nhận Key hợp lệ và còn hạn sử dụng
                         if (orig_showMenu) {
-                            orig_showMenu(self, _cmd);
+                            orig_showMenu(strongTarget, strongCmd);
                         }
                     } else {
                         // Server báo Key ĐÃ HẾT HẠN hoặc BỊ KHÓA -> Xóa sạch key cục bộ ngay!
@@ -565,11 +464,11 @@ static void my_showMenu(id self, SEL _cmd) {
                         [[NSUserDefaults standardUserDefaults] synchronize];
 
                         NSString *msg = json[@"message"] ?: @"Key của bạn đã hết hạn sử dụng!";
-                        showActivationPrompt(self, msg);
+                        showActivationPrompt(strongTarget, msg);
                     }
                 } else {
                     NSString *msg = json[@"message"] ?: @"Key không hợp lệ!";
-                    showActivationPrompt(self, msg);
+                    showActivationPrompt(strongTarget, msg);
                 }
             });
         }];
