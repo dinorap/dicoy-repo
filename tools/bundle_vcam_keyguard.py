@@ -39,21 +39,31 @@ def unpack_deb(deb_path, out_dir):
             t.extractall(os.path.join(out_dir, "data"))
 
 def pack_deb(stage_dir, out_deb_path):
-    # 1. create control.tar.gz
+    # 1. create control.tar.gz (GNU format, integer mtime to prevent PAX 'x' headers)
     control_buf = io.BytesIO()
     with gzip.GzipFile(fileobj=control_buf, mode="wb", mtime=0) as gz:
-        with tarfile.open(fileobj=gz, mode="w:") as tar:
+        with tarfile.open(fileobj=gz, mode="w:", format=tarfile.GNU_FORMAT) as tar:
             control_dir = os.path.join(stage_dir, "control")
             for item in sorted(os.listdir(control_dir)):
                 full_path = os.path.join(control_dir, item)
                 arcname = f"./{item}"
-                tar.add(full_path, arcname=arcname)
+                ti = tar.gettarinfo(full_path, arcname=arcname)
+                ti.uid = 0
+                ti.gid = 0
+                ti.uname = "root"
+                ti.gname = "wheel"
+                ti.mtime = 0
+                if ti.isreg():
+                    with open(full_path, "rb") as fp:
+                        tar.addfile(ti, fp)
+                else:
+                    tar.addfile(ti)
     control_bytes = control_buf.getvalue()
 
-    # 2. create data.tar.gz
+    # 2. create data.tar.gz (GNU format, integer mtime to prevent PAX 'x' headers)
     data_buf = io.BytesIO()
     with gzip.GzipFile(fileobj=data_buf, mode="wb", mtime=0) as gz:
-        with tarfile.open(fileobj=gz, mode="w:") as tar:
+        with tarfile.open(fileobj=gz, mode="w:", format=tarfile.GNU_FORMAT) as tar:
             data_dir = os.path.join(stage_dir, "data")
             for root, dirs, files in os.walk(data_dir):
                 dirs.sort()
@@ -71,6 +81,7 @@ def pack_deb(stage_dir, out_deb_path):
                     ti.gid = 0
                     ti.uname = "root"
                     ti.gname = "wheel"
+                    ti.mtime = 0
                     tar.addfile(ti)
                 for f in files:
                     f_path = os.path.join(root, f)
@@ -80,6 +91,7 @@ def pack_deb(stage_dir, out_deb_path):
                     ti.gid = 0
                     ti.uname = "root"
                     ti.gname = "wheel"
+                    ti.mtime = 0
                     with open(f_path, "rb") as fp:
                         tar.addfile(ti, fp)
     data_bytes = data_buf.getvalue()
