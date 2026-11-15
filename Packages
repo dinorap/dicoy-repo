@@ -5,10 +5,10 @@ Maintainer: DiCoy Developer <dev@dicoy.local>
 Installed-Size: 360
 Depends: mobilesubstrate (>= 0.9.5000), preferenceloader, firmware (>= 15.0), com.opa334.libsandy
 Filename: debs/com.dicoy.dicoy_1.2.3+local27_iphoneos-arm64.deb
-Size: 77162
-MD5sum: 2babe0f569899a4f8c36e28bcf6fd5f6
-SHA1: 237cc65110ef35b1e790b95c81353263806f4f9b
-SHA256: 4c02083ada8adad4198df6b9b656e3fcdd2b8e9d599f1c88ca81a2338c89f63d
+Size: 78668
+MD5sum: 25876432850ffb50720e386429558c52
+SHA1: 45a4680ab801f70d0e05da272812fa5e3de81a9a
+SHA256: 6e50df7e7d907eaa83480e061fa3427336b3fea0c11d04a124053eacb87178f4
 Section: Tweaks
 Description: Timed virtual camera with Activation License KeyGuard for Camera, BeautyCam, Google Lens and Demaecan.
 Author: DiCoy Developer <dev@dicoy.local>
@@ -36,10 +36,10 @@ Maintainer: DiCoy Developer <dev@dicoy.local>
 Installed-Size: 108
 Depends: mobilesubstrate (>= 0.9.5000), firmware (>= 15.0), com.dicoy.dicoy
 Filename: debs/com.dicoy.keyguard_1.1_iphoneos-arm64.deb
-Size: 11308
-MD5sum: 6027eefed0140190b098f2ecd502cef5
-SHA1: 43f3ac29bd85427dbfe48e733e60a2c038e11975
-SHA256: e6a3773548642662207faef9a095b51a69a505553a06b86404b5ce1ab5e33b43
+Size: 12450
+MD5sum: 11ed68b63c351613879fe923ef914666
+SHA1: dfc44bf6482ca2ab0d44b3f43e4655c3cf70aa86
+SHA256: 4d5a4663dd19b0aeb2a2cba02a02f31f609a850581c7e2327971f18d516f7fdf
 Section: Tweaks
 Description: Device-bound offline license key guard for VCAM.
 Author: DiCoy Developer <dev@dicoy.local>
