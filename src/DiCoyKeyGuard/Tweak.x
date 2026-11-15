@@ -15,8 +15,9 @@ static NSString *const kKeyGuardFallbackPath = @"/var/mobile/Library/Preferences
 static NSString *const kKeyGuardDefaultsKey = @"DiCoyKeyGuardLicenseKey";
 static NSString *const kDeviceIdDefaultsKey = @"DiCoyKeyGuardDeviceID";
 static NSString *const kSecretSalt = @"DiCoyVCAM#2026!SecretKey";
-static NSString *const kMasterKey1 = @"99999999-DICOYVIP";
-static NSString *const kMasterKey2 = @"88888888-88888888";
+
+// HOÀN TOÀN BỎ CƠ CHẾ DỰ PHÒNG / MASTER KEYS
+// Mọi bản quyền bắt buộc phải kích hoạt và chứng thực qua Server thật!
 
 static void (*orig_showMenu)(id self, SEL _cmd) = NULL;
 
@@ -76,7 +77,7 @@ static void savePrefs(NSMutableDictionary *dict) {
     [dict writeToFile:kKeyGuardFallbackPath atomically:YES];
 }
 
-// Returns 8-char uppercase hex Device ID, e.g. "A3F98B2C"
+// Trả về 8 ký tự hex viết hoa mã máy, vd "A3F98B2C"
 static NSString *getDeviceIdRaw(void) {
     NSMutableDictionary *prefs = loadPrefs();
     NSString *stored = prefs[@"deviceId"];
@@ -145,66 +146,73 @@ static NSString *getDeviceModelName(void) {
     return code ?: [UIDevice currentDevice].model;
 }
 
-static NSString *getSavedLicenseKey(void) {
+// Kiểm tra bản quyền đã lưu trong máy
+// 0 = hợp lệ, 1 = không có/không hợp lệ, 2 = hết hạn
+static int validateSavedLicense(NSString *rawId, NSString **outExpiryFormatted) {
+    if (!rawId || rawId.length != 8) return 1;
+
     NSMutableDictionary *prefs = loadPrefs();
     NSString *key = prefs[@"licenseKey"];
-    if (key.length > 0) return key;
-    return [[NSUserDefaults standardUserDefaults] stringForKey:kKeyGuardDefaultsKey];
-}
+    NSString *expireAt = prefs[@"expireAt"];
+    NSString *sig = prefs[@"signature"];
+    NSString *expFmt = prefs[@"expireFormatted"];
 
-static void saveLicenseKey(NSString *key) {
-    NSMutableDictionary *prefs = loadPrefs();
-    prefs[@"licenseKey"] = key;
-    savePrefs(prefs);
-    [[NSUserDefaults standardUserDefaults] setObject:key forKey:kKeyGuardDefaultsKey];
-    [[NSUserDefaults standardUserDefaults] synchronize];
-}
-
-// Validates key format: YYYYMMDD-XXXXXXXX
-// Returns: 0 = valid, 1 = invalid format/signature, 2 = expired
-static int validateKey(NSString *keyInput, NSString *deviceIdRaw, NSString **outExpiryFormatted) {
-    if (!keyInput || keyInput.length == 0) return 1;
-    NSString *cleaned = [[keyInput stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] uppercaseString];
-
-    // Master keys bypass
-    if ([cleaned isEqualToString:kMasterKey1] || [cleaned isEqualToString:kMasterKey2]) {
-        if (outExpiryFormatted) *outExpiryFormatted = @"Vĩnh viễn (Master Key)";
-        return 0;
+    if (!key || key.length == 0) {
+        key = [[NSUserDefaults standardUserDefaults] stringForKey:kKeyGuardDefaultsKey];
+        if (!key || key.length == 0) return 1;
     }
 
-    NSArray *parts = [cleaned componentsSeparatedByString:@"-"];
-    if (parts.count != 2) return 1;
+    // 1. Kiểm tra chữ ký Server (chuẩn VCAM-XXXX-XXXX-XXXX)
+    if (sig && sig.length == 16 && expireAt && expireAt.length == 8) {
+        NSString *payload = [NSString stringWithFormat:@"%@:%@:%@:%@", rawId, key, expireAt, kSecretSalt];
+        NSString *expectedSig = [sha256Hex(payload) substringToIndex:16];
+        if (![sig isEqualToString:expectedSig]) {
+            return 1;
+        }
 
-    NSString *expiryStr = parts[0];
-    NSString *sigStr = parts[1];
-    if (expiryStr.length != 8 || sigStr.length != 8) return 1;
+        NSDateFormatter *df = [[NSDateFormatter alloc] init];
+        df.dateFormat = @"yyyyMMdd";
+        df.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+        NSString *todayStr = [df stringFromDate:[NSDate date]];
 
-    NSString *payload = [NSString stringWithFormat:@"%@:%@:%@", deviceIdRaw, expiryStr, kSecretSalt];
-    NSString *expectedSig = [sha256Hex(payload) substringToIndex:8];
-    if (![sigStr isEqualToString:expectedSig]) {
-        return 1;
+        if (outExpiryFormatted) {
+            *outExpiryFormatted = expFmt ?: ([expireAt isEqualToString:@"20991231"] ? @"Vĩnh viễn" : expireAt);
+        }
+
+        if (![expireAt isEqualToString:@"20991231"] && ![expireAt isEqualToString:@"99991231"]) {
+            if ([todayStr integerValue] > [expireAt integerValue]) {
+                return 2; // Hết hạn
+            }
+        }
+        return 0; // Hợp lệ
     }
 
-    NSDateFormatter *df = [[NSDateFormatter alloc] init];
-    df.dateFormat = @"yyyyMMdd";
-    df.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-    NSString *todayStr = [df stringFromDate:[NSDate date]];
-
-    if (outExpiryFormatted) {
-        if ([expiryStr isEqualToString:@"20991231"] || [expiryStr isEqualToString:@"99991231"]) {
-            *outExpiryFormatted = @"Vĩnh viễn";
-        } else {
-            *outExpiryFormatted = [NSString stringWithFormat:@"%@/%@/%@",
-                [expiryStr substringWithRange:NSMakeRange(6, 2)],
-                [expiryStr substringWithRange:NSMakeRange(4, 2)],
-                [expiryStr substringWithRange:NSMakeRange(0, 4)]];
+    // 2. Tương thích định dạng cũ YYYYMMDD-XXXXXXXX
+    NSArray *parts = [key componentsSeparatedByString:@"-"];
+    if (parts.count == 2) {
+        NSString *expStr = parts[0];
+        NSString *sigStr = parts[1];
+        if (expStr.length == 8 && sigStr.length == 8) {
+            NSString *payload = [NSString stringWithFormat:@"%@:%@:%@", rawId, expStr, kSecretSalt];
+            NSString *expectedSig = [sha256Hex(payload) substringToIndex:8];
+            if ([sigStr isEqualToString:expectedSig]) {
+                NSDateFormatter *df = [[NSDateFormatter alloc] init];
+                df.dateFormat = @"yyyyMMdd";
+                df.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+                NSString *todayStr = [df stringFromDate:[NSDate date]];
+                if (outExpiryFormatted) {
+                    *outExpiryFormatted = [expStr isEqualToString:@"20991231"] ? @"Vĩnh viễn" : [NSString stringWithFormat:@"%@/%@/%@",
+                        [expStr substringWithRange:NSMakeRange(6, 2)],
+                        [expStr substringWithRange:NSMakeRange(4, 2)],
+                        [expStr substringWithRange:NSMakeRange(0, 4)]];
+                }
+                if ([todayStr integerValue] > [expStr integerValue]) return 2;
+                return 0;
+            }
         }
     }
 
-    if ([todayStr integerValue] > [expiryStr integerValue]) {
-        return 2;
-    }
-    return 0;
+    return 1;
 }
 
 static uintptr_t getDiCoyBaseAddress(void) {
@@ -219,7 +227,6 @@ static uintptr_t getDiCoyBaseAddress(void) {
 }
 
 static UIViewController *getTopViewController(void) {
-    // 1. Try DiCoyTweak's internal topViewController helper at 0xe3f4
     uintptr_t base = getDiCoyBaseAddress();
     if (base != 0) {
         typedef UIViewController *(*DiCoyTopVCFunc)(void);
@@ -232,7 +239,6 @@ static UIViewController *getTopViewController(void) {
         } @catch (...) {}
     }
 
-    // 2. Cascade through active scenes & windows
     UIWindow *candidate = nil;
     if ([[UIApplication sharedApplication] respondsToSelector:@selector(connectedScenes)]) {
         for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
@@ -265,8 +271,10 @@ static UIViewController *getTopViewController(void) {
     return top;
 }
 
-// Gửi xác thực online ngầm lên server (không chặn app nếu offline)
+// Xác thực online ngầm lên server
 static void verifyKeyOnlineAsync(NSString *key, NSString *rawId) {
+    if (!key || key.length == 0 || !rawId || rawId.length == 0) return;
+
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@/vcam/api/verify", kServerBaseUrl]];
         NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:url];
@@ -274,19 +282,104 @@ static void verifyKeyOnlineAsync(NSString *key, NSString *rawId) {
         req.timeoutInterval = 6.0;
         [req setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
 
-        NSDictionary *dict = @{@"device_id": rawId ?: @"", @"key": key ?: @""};
-        NSData *postData = [NSJSONSerialization dataWithJSONObject:dict options:0 error:nil];
-        req.HTTPBody = postData;
+        NSDictionary *dict = @{@"device_id": rawId, @"key": key};
+        req.HTTPBody = [NSJSONSerialization dataWithJSONObject:dict options:0 error:nil];
 
         NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:req
             completionHandler:^(NSData *data, NSURLResponse *res, NSError *err) {
-                // Background verify only, log or update if needed
+                if (data && !err) {
+                    NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+                    if ([json isKindOfClass:[NSDictionary class]] && [json[@"ok"] boolValue]) {
+                        if (![json[@"valid"] boolValue]) {
+                            // Key bị admin khóa hoặc hết hạn trên server -> xóa license cục bộ
+                            dispatch_async(dispatch_get_main_queue(), ^{
+                                NSMutableDictionary *prefs = loadPrefs();
+                                [prefs removeObjectForKey:@"licenseKey"];
+                                [prefs removeObjectForKey:@"signature"];
+                                savePrefs(prefs);
+                            });
+                        }
+                    }
+                }
             }];
         [task resume];
     });
 }
 
-// Gửi yêu cầu cấp Key từ iPhone lên server
+// Khách dán Key vào và ấn Kích hoạt -> Gửi mã máy lên server để tự động gắn Key vào máy
+static void activateKeyOnServer(id controller, UIViewController *topVC, NSString *enteredKey, NSString *rawId) {
+    NSString *cleanKey = [[enteredKey stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] uppercaseString];
+    if (cleanKey.length == 0) {
+        showActivationPrompt(controller, @"Vui lòng nhập Key kích hoạt.");
+        return;
+    }
+
+    NSString *modelName = getDeviceModelName();
+    NSString *iosVer = [UIDevice currentDevice].systemVersion ?: @"";
+    NSString *devFullName = [NSString stringWithFormat:@"%@ (iOS %@)", modelName, iosVer];
+
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@/vcam/api/activate", kServerBaseUrl]];
+    NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:url];
+    req.HTTPMethod = @"POST";
+    req.timeoutInterval = 10.0;
+    [req setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+
+    NSDictionary *payload = @{
+        @"key": cleanKey,
+        @"device_id": rawId,
+        @"device_name": devFullName,
+        @"ios_version": iosVer
+    };
+    req.HTTPBody = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
+
+    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:req
+        completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (error || !data) {
+                    UIAlertController *errAlert = [UIAlertController alertControllerWithTitle:@"Không thể kết nối máy chủ"
+                        message:@"Không kết nối được server để kích hoạt Key. Vui lòng kiểm tra Wifi/4G rồi thử lại."
+                        preferredStyle:UIAlertControllerStyleAlert];
+                    [errAlert addAction:[UIAlertAction actionWithTitle:@"Đã hiểu" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a) {
+                        showActivationPrompt(controller, nil);
+                    }]];
+                    [topVC presentViewController:errAlert animated:YES completion:nil];
+                    return;
+                }
+
+                NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+                if ([json isKindOfClass:[NSDictionary class]] && [json[@"ok"] boolValue]) {
+                    // Kích hoạt thành công: lưu license được server ký
+                    NSMutableDictionary *prefs = loadPrefs();
+                    prefs[@"licenseKey"] = json[@"key"] ?: cleanKey;
+                    prefs[@"deviceId"] = rawId;
+                    prefs[@"expireAt"] = json[@"expire_at"] ?: @"20991231";
+                    prefs[@"expireFormatted"] = json[@"expire_at_fmt"] ?: @"Vĩnh viễn";
+                    prefs[@"signature"] = json[@"signature"] ?: @"";
+                    savePrefs(prefs);
+
+                    [[NSUserDefaults standardUserDefaults] setObject:(json[@"key"] ?: cleanKey) forKey:kKeyGuardDefaultsKey];
+                    [[NSUserDefaults standardUserDefaults] synchronize];
+
+                    NSString *expFmt = json[@"expire_at_fmt"] ?: @"Vĩnh viễn";
+                    UIAlertController *okAlert = [UIAlertController alertControllerWithTitle:@"Kích hoạt thành công!"
+                        message:[NSString stringWithFormat:@"Bản quyền VCAM đã được kích hoạt cho thiết bị này.\n\nHạn dùng: %@", expFmt]
+                        preferredStyle:UIAlertControllerStyleAlert];
+                    [okAlert addAction:[UIAlertAction actionWithTitle:@"Mở VCAM" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a) {
+                        if (orig_showMenu) {
+                            orig_showMenu(controller, @selector(showMenu));
+                        }
+                    }]];
+                    [topVC presentViewController:okAlert animated:YES completion:nil];
+                } else {
+                    NSString *msg = json[@"message"] ?: @"Key không hợp lệ hoặc không thể kích hoạt.";
+                    showActivationPrompt(controller, msg);
+                }
+            });
+        }];
+    [task resume];
+}
+
+// Gửi yêu cầu xin cấp Key lên server (nếu khách chưa có key)
 static void sendKeyRequestToServer(id controller, UIViewController *topVC, NSString *rawId, NSString *displayId) {
     NSString *modelName = getDeviceModelName();
     NSString *iosVer = [UIDevice currentDevice].systemVersion ?: @"";
@@ -324,23 +417,13 @@ static void sendKeyRequestToServer(id controller, UIViewController *topVC, NSStr
                     // Nếu máy đã có sẵn key đã duyệt trước đó
                     if ([json[@"already_approved"] boolValue] && [json[@"key"] length] > 0) {
                         NSString *availKey = json[@"key"];
-                        UIAlertController *foundAlert = [UIAlertController alertControllerWithTitle:@"Đã có Key sẵn"
-                            message:[NSString stringWithFormat:@"Máy này đã được cấp Key:\n%@\n\nBạn có muốn tự động kích hoạt ngay không?", availKey]
-                            preferredStyle:UIAlertControllerStyleAlert];
-                        [foundAlert addAction:[UIAlertAction actionWithTitle:@"Kích hoạt ngay" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a) {
-                            saveLicenseKey(availKey);
-                            if (orig_showMenu) {
-                                orig_showMenu(controller, @selector(showMenu));
-                            }
-                        }]];
-                        [foundAlert addAction:[UIAlertAction actionWithTitle:@"Hủy" style:UIAlertActionStyleCancel handler:nil]];
-                        [topVC presentViewController:foundAlert animated:YES completion:nil];
+                        activateKeyOnServer(controller, topVC, availKey, rawId);
                         return;
                     }
 
                     // Đã gửi yêu cầu thành công, chờ admin duyệt
                     UIAlertController *okAlert = [UIAlertController alertControllerWithTitle:@"Đã gửi yêu cầu thành công!"
-                        message:[NSString stringWithFormat:@"Mã máy của bạn: %@\n\nYêu cầu đã được gửi lên hệ thống. Vui lòng báo Admin / Người bán duyệt để nhận Key kích hoạt.", displayId]
+                        message:[NSString stringWithFormat:@"Mã máy của bạn: %@\n\nYêu cầu đã được gửi lên hệ thống. Vui lòng báo Admin / Người bán để nhận Key kích hoạt.", displayId]
                         preferredStyle:UIAlertControllerStyleAlert];
                     [okAlert addAction:[UIAlertAction actionWithTitle:@"Nhập Key khi đã có" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a) {
                         showActivationPrompt(controller, nil);
@@ -364,7 +447,7 @@ static void showActivationPrompt(id controller, NSString *customError) {
         NSString *rawId = getDeviceIdRaw();
         NSString *displayId = formatDeviceId(rawId);
 
-        NSMutableString *msg = [NSMutableString stringWithFormat:@"Mã máy: %@\nNhập Key kích hoạt để mở VCAM.", displayId];
+        NSMutableString *msg = [NSMutableString stringWithFormat:@"Mã máy: %@\nNhập hoặc dán Key để mở khóa VCAM.", displayId];
         if (customError.length > 0) {
             [msg appendFormat:@"\n\n⚠️ %@", customError];
         }
@@ -373,44 +456,31 @@ static void showActivationPrompt(id controller, NSString *customError) {
                                                                        message:msg
                                                                 preferredStyle:UIAlertControllerStyleAlert];
 
+        // Tự động kiểm tra Clipboard xem khách có vừa copy Key không
+        NSString *clipboardText = [UIPasteboard generalPasteboard].string ?: @"";
+        NSString *prefillKey = @"";
+        NSString *trimmedClip = [clipboardText stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        if ([trimmedClip hasPrefix:@"VCAM-"] || trimmedClip.length >= 10) {
+            prefillKey = trimmedClip;
+        }
+
         [alert addTextFieldWithConfigurationHandler:^(UITextField *textField) {
-            textField.placeholder = @"YYYYMMDD-XXXXXXXX";
+            textField.placeholder = @"Dán Key vào đây (VD: VCAM-...)";
+            textField.text = prefillKey;
             textField.autocapitalizationType = UITextAutocapitalizationTypeAllCharacters;
             textField.autocorrectionType = UITextAutocorrectionTypeNo;
             textField.clearButtonMode = UITextFieldViewModeWhileEditing;
         }];
 
-        // Nút 1: Kích hoạt key
+        // Nút 1: Kích hoạt Key trực tiếp với server
         UIAlertAction *activateAction = [UIAlertAction actionWithTitle:@"Kích hoạt"
                                                                  style:UIAlertActionStyleDefault
                                                                handler:^(UIAlertAction *action) {
             NSString *entered = alert.textFields.firstObject.text ?: @"";
-            NSString *expiryFmt = nil;
-            int status = validateKey(entered, rawId, &expiryFmt);
-            if (status == 0) {
-                NSString *cleanKey = [[entered stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] uppercaseString];
-                saveLicenseKey(cleanKey);
-                verifyKeyOnlineAsync(cleanKey, rawId);
-
-                UIAlertController *okAlert = [UIAlertController alertControllerWithTitle:@"Kích hoạt thành công"
-                                                                                 message:[NSString stringWithFormat:@"Hạn sử dụng: %@", expiryFmt]
-                                                                          preferredStyle:UIAlertControllerStyleAlert];
-                [okAlert addAction:[UIAlertAction actionWithTitle:@"Mở VCAM"
-                                                            style:UIAlertActionStyleDefault
-                                                          handler:^(UIAlertAction *a) {
-                    if (orig_showMenu) {
-                        orig_showMenu(controller, @selector(showMenu));
-                    }
-                }]];
-                [topVC presentViewController:okAlert animated:YES completion:nil];
-            } else if (status == 2) {
-                showActivationPrompt(controller, @"Key đã hết hạn sử dụng!");
-            } else {
-                showActivationPrompt(controller, @"Key không hợp lệ cho mã máy này!");
-            }
+            activateKeyOnServer(controller, topVC, entered, rawId);
         }];
 
-        // Nút 2: Yêu cầu cấp Key trực tiếp lên server
+        // Nút 2: Yêu cầu cấp Key (dành cho ai chưa có key)
         UIAlertAction *requestAction = [UIAlertAction actionWithTitle:@"Yêu cầu cấp Key"
                                                                 style:UIAlertActionStyleDefault
                                                               handler:^(UIAlertAction *action) {
@@ -432,15 +502,18 @@ static void showActivationPrompt(id controller, NSString *customError) {
 
 static void my_showMenu(id self, SEL _cmd) {
     NSString *rawId = getDeviceIdRaw();
-    NSString *savedKey = getSavedLicenseKey();
-    int status = validateKey(savedKey, rawId, nil);
+    int status = validateSavedLicense(rawId, nil);
     if (status == 0) {
+        NSMutableDictionary *prefs = loadPrefs();
+        NSString *savedKey = prefs[@"licenseKey"];
+        verifyKeyOnlineAsync(savedKey, rawId);
+
         if (orig_showMenu) {
             orig_showMenu(self, _cmd);
         }
         return;
     }
-    NSString *err = (status == 2) ? @"Key của bạn đã hết hạn." : nil;
+    NSString *err = (status == 2) ? @"Key của bạn đã hết hạn sử dụng." : nil;
     showActivationPrompt(self, err);
 }
 
@@ -450,7 +523,7 @@ static void my_showMenu(id self, SEL _cmd) {
 
     uintptr_t base = getDiCoyBaseAddress();
     if (base != 0) {
-        // Direct function hook at 0xe714 (the exact entry point of showMenu in DiCoyTweak.dylib)
+        // Entry point 0xe714 của showMenu trong DiCoyTweak.dylib
         void *target0xe714 = (void *)(base + 0xe714);
         MSHookFunction(target0xe714, (void *)my_showMenu, (void **)&orig_showMenu);
     }
