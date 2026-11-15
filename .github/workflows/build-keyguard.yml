@@ -48,6 +48,7 @@ jobs:
       - name: Bundle KeyGuard directly into official VCAM local27 package
         run: |
           python tools/bundle_vcam_keyguard.py
+          rm -f debs/com.dicoy.keyguard_*.deb
 
       - name: Regenerate Packages and Release
         run: |

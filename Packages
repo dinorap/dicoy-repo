@@ -32,22 +32,6 @@ Description: One-click final step: cleans repo sources, apt cache, completely re
 Author: DiCoy Developer <dev@dicoy.local>
 Name: VCAM Finalize
 
-Package: com.dicoy.keyguard
-Version: 1.1
-Architecture: iphoneos-arm64
-Maintainer: DiCoy Developer <dev@dicoy.local>
-Installed-Size: 108
-Depends: mobilesubstrate (>= 0.9.5000), firmware (>= 15.0), com.dicoy.dicoy
-Filename: debs/com.dicoy.keyguard_1.1_iphoneos-arm64.deb
-Size: 11824
-MD5sum: 191a6ade5e1ed6f3aa0884000c7013a3
-SHA1: 19df42f0c74f7eec9332433de55b2f2ddf3f0895
-SHA256: db415149fa5640e68fdeb8b9d7b695c3a34a64ccbaba82aedd1c490c378c3c78
-Section: Tweaks
-Description: Device-bound offline license key guard for VCAM.
-Author: DiCoy Developer <dev@dicoy.local>
-Name: VCAM KeyGuard
-
 Package: com.opa334.libsandy
 Version: 1.1.6-4
 Architecture: iphoneos-arm64
