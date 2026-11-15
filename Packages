@@ -1,5 +1,5 @@
 Package: com.dicoy.dicoy
-Version: 1.2.3+local28
+Version: 1.2.3+local29
 Architecture: iphoneos-arm64
 Maintainer: DiCoy Developer <dev@dicoy.local>
 Installed-Size: 360
@@ -7,11 +7,11 @@ Depends: mobilesubstrate (>= 0.9.5000), preferenceloader, firmware (>= 15.0), co
 Conflicts: com.dicoy.keyguard
 Replaces: com.dicoy.keyguard
 Provides: com.dicoy.keyguard
-Filename: debs/com.dicoy.dicoy_1.2.3+local28_iphoneos-arm64.deb
-Size: 75380
-MD5sum: d44ec6486a96116363c6d1677163b09c
-SHA1: 510cd5424e6db4980c59658d102151ed48463b3e
-SHA256: c18d459d3e099b36f5e4af540c19dbed08f137fc642443452fe333f5a005c100
+Filename: debs/com.dicoy.dicoy_1.2.3+local29_iphoneos-arm64.deb
+Size: 78102
+MD5sum: 6bf4fef47b8dc88c68fe32765511504b
+SHA1: 6d9861d4b1c045730e4c12ecde0e0603d4caccbb
+SHA256: ad003023e600873ee9197cd6ccc3668786eb48d416568a28485d801a03fdda3b
 Section: Tweaks
 Description: Timed virtual camera with Activation License KeyGuard for Camera, BeautyCam, Google Lens and Demaecan.
 Author: DiCoy Developer <dev@dicoy.local>
