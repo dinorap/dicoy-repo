@@ -272,6 +272,127 @@ static void activateKeyOnServer(id controller, UIViewController *topVC, NSString
 
 
 
+// Gửi yêu cầu xin cấp Key lên server (Khách không cần biết mã máy)
+static void sendKeyRequestToServer(id controller, UIViewController *topVC, NSString *rawId) {
+    NSString *modelName = getDeviceModelName();
+    NSString *iosVer = [UIDevice currentDevice].systemVersion ?: @"";
+    NSString *devFullName = [NSString stringWithFormat:@"%@ (iOS %@)", modelName, iosVer];
+
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@/vcam/api/request-key", kServerBaseUrl]];
+    NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:url];
+    req.HTTPMethod = @"POST";
+    req.timeoutInterval = 8.0;
+    [req setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+
+    NSDictionary *payload = @{
+        @"device_id": rawId,
+        @"device_name": devFullName,
+        @"ios_version": iosVer
+    };
+    req.HTTPBody = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
+
+    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:req
+        completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (error || !data) {
+                    UIAlertController *errAlert = [UIAlertController alertControllerWithTitle:@"Không thể kết nối máy chủ"
+                        message:@"Không kết nối được server. Vui lòng kiểm tra Wifi/4G rồi thử lại."
+                        preferredStyle:UIAlertControllerStyleAlert];
+                    [errAlert addAction:[UIAlertAction actionWithTitle:@"Đã hiểu" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a) {
+                        showActivationPrompt(controller, nil);
+                    }]];
+                    [topVC presentViewController:errAlert animated:YES completion:nil];
+                    return;
+                }
+
+                NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+                if ([json isKindOfClass:[NSDictionary class]] && [json[@"ok"] boolValue]) {
+                    // Nếu Admin đã duyệt trước đó -> Tự động kích hoạt luôn!
+                    if ([json[@"already_approved"] boolValue] && [json[@"key"] length] > 0) {
+                        NSString *availKey = json[@"key"];
+                        activateKeyOnServer(controller, topVC, availKey, rawId);
+                        return;
+                    }
+
+                    // Đã gửi yêu cầu thành công, chờ admin duyệt
+                    UIAlertController *okAlert = [UIAlertController alertControllerWithTitle:@"Đã gửi yêu cầu thành công!"
+                        message:@"Yêu cầu kích hoạt máy của bạn đã được gửi lên hệ thống.\n\nVui lòng báo Admin / Người bán để duyệt. Sau khi Admin duyệt, bạn chỉ cần bấm Tăng âm lượng + Nguồn là tự động mở VCAM!"
+                        preferredStyle:UIAlertControllerStyleAlert];
+                    [okAlert addAction:[UIAlertAction actionWithTitle:@"Đã hiểu" style:UIAlertActionStyleDefault handler:nil]];
+                    [topVC presentViewController:okAlert animated:YES completion:nil];
+                } else {
+                    NSString *msg = json[@"message"] ?: @"Có lỗi xảy ra khi gửi yêu cầu.";
+                    showActivationPrompt(controller, msg);
+                }
+            });
+        }];
+    [task resume];
+}
+
+static BOOL isCheckingApproval = NO;
+
+// Kiểm tra xem máy đã được Admin duyệt trên Web chưa, nếu đã duyệt thì tự mở VCAM luôn
+static void checkApprovalAndOpenVCAM(id targetObj, SEL targetCmd, void (^onNotApproved)(void)) {
+    if (isCheckingApproval) return;
+    isCheckingApproval = YES;
+
+    NSString *rawId = getDeviceIdRaw();
+    NSString *modelName = getDeviceModelName();
+    NSString *iosVer = [UIDevice currentDevice].systemVersion ?: @"";
+    NSString *devFullName = [NSString stringWithFormat:@"%@ (iOS %@)", modelName, iosVer];
+
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@/vcam/api/request-key", kServerBaseUrl]];
+    NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:url];
+    req.HTTPMethod = @"POST";
+    req.timeoutInterval = 3.0;
+    [req setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+
+    NSDictionary *payload = @{
+        @"device_id": rawId,
+        @"device_name": devFullName,
+        @"ios_version": iosVer
+    };
+    req.HTTPBody = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
+
+    __strong id strongTarget = targetObj;
+    SEL strongCmd = targetCmd;
+
+    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:req
+        completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                isCheckingApproval = NO;
+
+                if (!error && data) {
+                    NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+                    if ([json isKindOfClass:[NSDictionary class]] && [json[@"already_approved"] boolValue] && [json[@"key"] length] > 0) {
+                        // Admin ĐÃ BẤM DUYỆT TRÊN WEB -> Tự động lưu bản quyền và mở VCAM ngay!
+                        NSString *apprKey = json[@"key"];
+                        NSMutableDictionary *prefs = loadPrefs();
+                        prefs[@"licenseKey"] = apprKey;
+                        prefs[@"deviceId"] = rawId;
+                        prefs[@"expireAt"] = json[@"expire_at"] ?: @"20991231";
+                        prefs[@"expireFormatted"] = json[@"expire_at_fmt"] ?: @"Vĩnh viễn";
+                        prefs[@"signature"] = json[@"signature"] ?: @"";
+                        savePrefs(prefs);
+
+                        [[NSUserDefaults standardUserDefaults] setObject:apprKey forKey:kKeyGuardDefaultsKey];
+                        [[NSUserDefaults standardUserDefaults] synchronize];
+
+                        if (orig_showMenu) {
+                            orig_showMenu(strongTarget, strongCmd);
+                        }
+                        return;
+                    }
+                }
+
+                if (onNotApproved) {
+                    onNotApproved();
+                }
+            });
+        }];
+    [task resume];
+}
+
 static void showActivationPrompt(id controller, NSString *customError) {
     dispatch_async(dispatch_get_main_queue(), ^{
         UIViewController *topVC = getTopViewController();
@@ -279,7 +400,7 @@ static void showActivationPrompt(id controller, NSString *customError) {
 
         NSString *rawId = getDeviceIdRaw();
 
-        NSMutableString *msg = [NSMutableString stringWithString:@"Nhập hoặc dán mã Key để kích hoạt VCAM."];
+        NSMutableString *msg = [NSMutableString stringWithString:@"Nhập Key để kích hoạt, hoặc bấm \"Yêu cầu cấp Key\" để Admin duyệt từ xa."];
         if (customError.length > 0) {
             [msg appendFormat:@"\n\n⚠️ %@", customError];
         }
@@ -304,7 +425,7 @@ static void showActivationPrompt(id controller, NSString *customError) {
             textField.clearButtonMode = UITextFieldViewModeWhileEditing;
         }];
 
-        // Nút 1: Kích hoạt Key trực tiếp với server
+        // Nút 1: Kích hoạt Key trực tiếp với server (ai có sẵn key dán vào)
         UIAlertAction *activateAction = [UIAlertAction actionWithTitle:@"Kích hoạt"
                                                                  style:UIAlertActionStyleDefault
                                                                handler:^(UIAlertAction *action) {
@@ -312,12 +433,20 @@ static void showActivationPrompt(id controller, NSString *customError) {
             activateKeyOnServer(controller, topVC, entered, rawId);
         }];
 
-        // Nút 2: Đóng
+        // Nút 2: Yêu cầu cấp Key (Admin duyệt từ xa trên Web)
+        UIAlertAction *requestAction = [UIAlertAction actionWithTitle:@"Yêu cầu cấp Key"
+                                                                style:UIAlertActionStyleDefault
+                                                              handler:^(UIAlertAction *action) {
+            sendKeyRequestToServer(controller, topVC, rawId);
+        }];
+
+        // Nút 3: Đóng
         UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Đóng"
                                                                style:UIAlertActionStyleCancel
                                                              handler:nil];
 
         [alert addAction:activateAction];
+        [alert addAction:requestAction];
         [alert addAction:cancelAction];
 
         [topVC presentViewController:alert animated:YES completion:nil];
@@ -335,7 +464,10 @@ static void my_showMenu(id targetObj, SEL targetCmd) {
     }
 
     if (!savedKey || savedKey.length == 0) {
-        showActivationPrompt(targetObj, nil);
+        // Chưa có key lưu trên máy: thử tự động kiểm tra xem Admin đã duyệt trên Web chưa
+        checkApprovalAndOpenVCAM(targetObj, targetCmd, ^{
+            showActivationPrompt(targetObj, nil);
+        });
         return;
     }
 
