@@ -500,21 +500,80 @@ static void showActivationPrompt(id controller, NSString *customError) {
     });
 }
 
+static BOOL isVerifyingKey = NO;
+
 static void my_showMenu(id self, SEL _cmd) {
     NSString *rawId = getDeviceIdRaw();
-    int status = validateSavedLicense(rawId, nil);
-    if (status == 0) {
-        NSMutableDictionary *prefs = loadPrefs();
-        NSString *savedKey = prefs[@"licenseKey"];
-        verifyKeyOnlineAsync(savedKey, rawId);
+    NSMutableDictionary *prefs = loadPrefs();
+    NSString *savedKey = prefs[@"licenseKey"];
+    if (!savedKey || savedKey.length == 0) {
+        savedKey = [[NSUserDefaults standardUserDefaults] stringForKey:kKeyGuardDefaultsKey];
+    }
 
-        if (orig_showMenu) {
-            orig_showMenu(self, _cmd);
-        }
+    if (!savedKey || savedKey.length == 0) {
+        showActivationPrompt(self, nil);
         return;
     }
-    NSString *err = (status == 2) ? @"Key của bạn đã hết hạn sử dụng." : nil;
-    showActivationPrompt(self, err);
+
+    if (isVerifyingKey) return;
+    isVerifyingKey = YES;
+
+    // Gửi request xác thực trực tiếp lên Server để lấy thời gian thực từ Server (chống khách chỉnh giờ trên iPhone)
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@/vcam/api/verify", kServerBaseUrl]];
+    NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:url];
+    req.HTTPMethod = @"POST";
+    req.timeoutInterval = 4.0;
+    [req setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+
+    NSDictionary *payload = @{
+        @"device_id": rawId ?: @"",
+        @"key": savedKey ?: @""
+    };
+    req.HTTPBody = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
+
+    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:req
+        completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                isVerifyingKey = NO;
+
+                if (error || !data) {
+                    UIViewController *topVC = getTopViewController();
+                    if (topVC) {
+                        UIAlertController *errAlert = [UIAlertController alertControllerWithTitle:@"Không thể kiểm tra bản quyền"
+                            message:@"Không kết nối được tới máy chủ xác thực. Vui lòng bật Wifi/4G để sử dụng VCAM."
+                            preferredStyle:UIAlertControllerStyleAlert];
+                        [errAlert addAction:[UIAlertAction actionWithTitle:@"Đóng" style:UIAlertActionStyleCancel handler:nil]];
+                        [topVC presentViewController:errAlert animated:YES completion:nil];
+                    }
+                    return;
+                }
+
+                NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+                if ([json isKindOfClass:[NSDictionary class]] && [json[@"ok"] boolValue]) {
+                    if ([json[@"valid"] boolValue]) {
+                        // Server chứng nhận Key hợp lệ và còn hạn sử dụng
+                        if (orig_showMenu) {
+                            orig_showMenu(self, _cmd);
+                        }
+                    } else {
+                        // Server báo Key ĐÃ HẾT HẠN hoặc BỊ KHÓA -> Xóa sạch key cục bộ ngay!
+                        NSMutableDictionary *p = loadPrefs();
+                        [p removeObjectForKey:@"licenseKey"];
+                        [p removeObjectForKey:@"signature"];
+                        savePrefs(p);
+                        [[NSUserDefaults standardUserDefaults] removeObjectForKey:kKeyGuardDefaultsKey];
+                        [[NSUserDefaults standardUserDefaults] synchronize];
+
+                        NSString *msg = json[@"message"] ?: @"Key của bạn đã hết hạn sử dụng!";
+                        showActivationPrompt(self, msg);
+                    }
+                } else {
+                    NSString *msg = json[@"message"] ?: @"Key không hợp lệ!";
+                    showActivationPrompt(self, msg);
+                }
+            });
+        }];
+    [task resume];
 }
 
 %ctor {
